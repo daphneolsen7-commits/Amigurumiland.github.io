@@ -172,7 +172,7 @@ function openProduct(id) {
         </label>
         <label for="reviewPhoto-${p.id}">Foto (opcional)</label>
         <input class="review-photo-input" id="reviewPhoto-${p.id}" type="file" accept="image/jpeg,image/png,image/webp" onchange="previewReviewPhoto(${p.id},this)">
-        <p class="muted">JPG, PNG o WebP. Máximo 5 MB; la imagen se reduce antes de guardarla.</p>
+        <p class="muted">JPG, PNG o WebP. Máximo 5 MB.</p>
         <div class="photo-preview" id="photoPreview-${p.id}" hidden>
           <img alt="Vista previa de la foto para la reseña">
           <button class="btn photo-remove" type="button" onclick="clearReviewPhoto(${p.id})">Quitar foto</button>
