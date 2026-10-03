@@ -124,7 +124,7 @@ function renderProducts() {
 function openProduct(id) {
   let p = products.find((x) => x.id === id);
   lastFocusedElement = document.activeElement;
-  window.custom = { color: p.slug === "hatsune-miku" ? "Original" : colors[0][0], size: sizes[0][0], extra: 0 };
+  window.custom = { color: p.slug === "hatsune-miku" ? "Original" : colors[0][0], size: sizes[0][0], extra: 0, basePrice: p.price };
   document.getElementById("productDetail").innerHTML = `
     <div class="product">
       <div class="gallery single-image-gallery">
@@ -133,7 +133,6 @@ function openProduct(id) {
       <div>
         <div class="muted">${p.cat}</div>
         <h2 id="productTitle">${p.name}</h2>
-        <h2>${money(p.price)}</h2>
         <p>Elige la personalización antes de agregar el producto al carrito.</p>
         ${p.slug !== "hatsune-miku" ? `
           <b>Color</b>
@@ -150,6 +149,7 @@ function openProduct(id) {
         <div class="option-row">
           ${sizes.map((s, i) => `<button type="button" class="size ${i ? "" : "active"}" aria-pressed="${i === 0}" onclick="chooseSize(${i},this)">${s[0]}</button>`).join("")}
         </div>
+        <p class="price" id="selectedPrice" aria-live="polite">Precio: ${money(p.price + sizes[0][1])}</p>
         <button class="btn dark" type="button" style="width:100%" onclick="addCustomized(${p.id})">Agregar al carrito</button>
         <div class="help">¿Tienes dudas? <a href="#" onclick="contactWhatsApp(${p.id});return false">Consultar por WhatsApp</a></div>
       </div>
@@ -172,7 +172,7 @@ function openProduct(id) {
         </label>
         <label for="reviewPhoto-${p.id}">Foto (opcional)</label>
         <input class="review-photo-input" id="reviewPhoto-${p.id}" type="file" accept="image/jpeg,image/png,image/webp" onchange="previewReviewPhoto(${p.id},this)">
-        <p class="muted">JPG, PNG o WebP. Máximo 5 MB.</p>
+        <p class="muted">JPG, PNG o WebP. Máximo 5 MB; la imagen se reduce antes de guardarla.</p>
         <div class="photo-preview" id="photoPreview-${p.id}" hidden>
           <img alt="Vista previa de la foto para la reseña">
           <button class="btn photo-remove" type="button" onclick="clearReviewPhoto(${p.id})">Quitar foto</button>
@@ -359,6 +359,7 @@ function chooseSize(i, b) {
   });
   b.classList.add("active");
   b.setAttribute("aria-pressed", "true");
+  document.getElementById("selectedPrice").textContent = `Precio: ${money(window.custom.basePrice + window.custom.extra)}`;
 }
 
 function addCustomized(id) {
