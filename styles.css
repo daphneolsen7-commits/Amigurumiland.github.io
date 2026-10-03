@@ -352,7 +352,7 @@ button:disabled {
 }
 
 .badge {
-  background: var(--black);
+  background: var(--accent);
   color: #fff;
   padding: 18px;
   border-radius: 15px;
