@@ -36,7 +36,7 @@
             <section id="inicio" class="hero">
                 <div>
                     <h1>Pequeños amigos,<br>grandes historias.</h1>
-                    <p>Muñecos tejidos a mano con cariño. Consulta las opciones de personalización disponibles en cada producto. Envíos a Quito</p><a class="btn dark"
+                    <p>Muñecos tejidos a mano con cariño. Consulta las opciones de personalización disponibles en cada producto.</p><a class="btn dark"
                         href="#catalogo">Ver productos</a>
                 </div>
                 <div class="hero-art">
@@ -68,9 +68,36 @@
                         cotización personalizada.</p>
                     <p>Para la personalización, Amigurumiland se reserva el derecho de aceptar o rechazar un pedido
                         según la viabilidad del diseño y la disponibilidad de materiales.</p>
-                    <a class="btn dark"
-                        href="https://wa.me/593992626500?text=Hola%2C%20quiero%20cotizar%20un%20amigurumi%20personalizado.%20Estos%20son%20los%20detalles%3A%20"
-                        target="_blank" rel="noopener">Cotizar por WhatsApp</a>
+                        <form class="custom-order-form" action="https://formsubmit.co/daphneolsen7@gmail.com" method="POST">
+                        <input type="hidden" name="_subject" value="Nueva solicitud de amigurumi personalizado">
+                        <input type="hidden" name="_template" value="table">
+                        <label>Nombre<input class="field" name="Nombre" type="text" autocomplete="name" required
+                            placeholder="Tu nombre"></label>
+                        <label>Correo<input class="field" name="email" type="email" autocomplete="email" required
+                            placeholder="correo@ejemplo.com"></label>
+                        <label class="form-wide">¿Qué amigurumi tienes en mente?<textarea class="field" name="Diseño"
+                            rows="3" required placeholder="Personaje, animal, temática u otra idea"></textarea></label>
+                        <label>Tamaño<select class="field" name="Tamaño" required>
+                            <option value="" selected disabled>Elige un tamaño</option>
+                            <option>Pequeño (15 cm)</option>
+                            <option>Mediano (20 cm)</option>
+                            <option>Grande (30 cm)</option>
+                            <option>Otro / por definir</option>
+                            </select></label>
+                        <label>Colores<input class="field" name="Colores" type="text" required
+                            placeholder="Ej.: crema y verde"></label>
+                        <label>Fecha deseada<input class="field" name="Fecha deseada" type="date"></label>
+                        <label>Enlace de referencia (opcional)<input class="field" name="Referencia" type="url"
+                            placeholder="https://..."></label>
+                        <label class="form-wide">Detalles adicionales<textarea class="field" name="Detalles adicionales"
+                            rows="4" placeholder="Cuéntanos cualquier detalle importante"></textarea></label>
+                        <label class="form-trap" aria-hidden="true">No completar<input name="_honey" tabindex="-1"
+                            autocomplete="off"></label>
+                        <p class="form-note form-wide">Usaremos tus datos únicamente para responder esta solicitud. El primer envío puede requerir confirmar el correo de destino.</p>
+                        <button class="btn dark form-wide" type="submit">Enviar solicitud</button>
+                        </form>
+                    <a class="btn dark" href="https://wa.me/593992626500?text=Hola%2C%20quiero%20cotizar%20un%20amigurumi%20personalizado.%20Estos%20son%20los%20detalles%3A%20"
+                        target="_blank" rel="noopener">También cotizar por WhatsApp</a>
                 </div>
             </section>
             <section id="faq" class="section faq">
