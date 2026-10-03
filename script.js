@@ -689,6 +689,17 @@ if (waLink) waLink.href = contactWhatsAppUrl;
 const waLinkFooter = document.getElementById("waLinkFooter");
 if (waLinkFooter) waLinkFooter.href = contactWhatsAppUrl;
 
+const desiredDateInput = document.querySelector('input[name="Fecha deseada"]');
+if (desiredDateInput) {
+  const firstFutureDate = new Date();
+  firstFutureDate.setDate(firstFutureDate.getDate() + 1);
+  desiredDateInput.min = [
+    firstFutureDate.getFullYear(),
+    String(firstFutureDate.getMonth() + 1).padStart(2, "0"),
+    String(firstFutureDate.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
 document.getElementById("name").addEventListener("input", () => {
   document.getElementById("checkoutError").textContent = "";
 });
