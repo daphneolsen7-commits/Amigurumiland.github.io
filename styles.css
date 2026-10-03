@@ -306,6 +306,108 @@ button:disabled {
   align-items: flex-start;
 }
 
+.custom-form-disclosure {
+  width: 100%;
+}
+
+.custom-request-actions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+.custom-form-disclosure summary {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  padding: 13px 40px 13px 18px;
+  border-radius: 12px;
+  background: var(--black);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  justify-content: center;
+  align-items: center;
+  list-style: none;
+}
+
+.custom-form-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.custom-form-disclosure summary::after {
+  content: "+";
+  position: absolute;
+  right: 18px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.custom-form-disclosure[open] summary::after {
+  content: "-";
+}
+
+.custom-request-actions > a {
+  min-height: 48px;
+  text-align: center;
+}
+
+.custom-form-disclosure[open] {
+  grid-column: 1 / -1;
+}
+
+.custom-order-form {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.custom-order-form label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  font-weight: 700;
+}
+
+.custom-order-form .field {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.custom-order-form textarea.field {
+  resize: vertical;
+}
+
+.form-wide {
+  grid-column: 1 / -1;
+}
+
+.form-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.form-trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 footer {
   background: var(--black);
   color: #fff;
@@ -731,6 +833,22 @@ footer {
 
   .footer {
     grid-template-columns: 1fr;
+  }
+
+  .custom-order-form {
+    grid-template-columns: 1fr;
+  }
+
+  .custom-request-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .custom-form-disclosure[open] {
+    grid-column: 1;
+  }
+
+  .custom-order-form > * {
+    grid-column: 1;
   }
 }
 
