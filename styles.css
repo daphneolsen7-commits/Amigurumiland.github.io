@@ -281,13 +281,13 @@ button:disabled {
 }
 
 .order-status.is-pending {
-  background: #fff0d9;
-  color: #704800;
+  background: var(--cream);
+  color: var(--muted);
 }
 
 .order-status.is-received {
-  background: #e5f3e9;
-  color: #245c35;
+  background: #f3e3dd;
+  color: var(--accent);
 }
 
 .order-items {
@@ -840,7 +840,6 @@ footer {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .badges {
     grid-template-columns: repeat(2, 1fr);
   }
 
