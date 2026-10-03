@@ -286,8 +286,8 @@ button:disabled {
 }
 
 .order-status.is-received {
-  background: #f3e3dd;
-  color: var(--accent);
+  background-color: #a0442c !important;
+  color: #fff !important;
 }
 
 .order-items {
