@@ -1,4 +1,6 @@
 const WHATSAPP_NUMBER = "593992626500";
+const ORDERS_STORAGE_KEY = "amigurumiland_orders";
+const LEGACY_ORDER_STORAGE_KEY = "amigurumiland_last_order";
 const products = [
   {
     id: 1,
@@ -58,7 +60,30 @@ function loadCart() {
   }
 }
 
+function loadOrders() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ORDERS_STORAGE_KEY) || "[]");
+    const orders = Array.isArray(saved)
+      ? saved.filter((order) => order && order.id).map((order) => ({
+        ...order,
+        status: order.status === "received" ? "received" : "pending"
+      }))
+      : [];
+    const legacyOrder = JSON.parse(localStorage.getItem(LEGACY_ORDER_STORAGE_KEY) || "null");
+
+    if (legacyOrder?.id && !orders.some((order) => order.id === legacyOrder.id)) {
+      orders.push({ ...legacyOrder, status: "pending" });
+    }
+
+    return orders.sort((first, second) => new Date(second.fecha) - new Date(first.fecha));
+  } catch (error) {
+    return [];
+  }
+}
+
 let cart = loadCart();
+let orders = loadOrders();
+let activeOrderView = "pending";
 let lastFocusedElement = null;
 let statusTimeout;
 
@@ -479,6 +504,96 @@ function closeOnBackdrop(event, modalId) {
   if (modalId === "checkoutModal") closeCheckout();
 }
 
+function saveOrders() {
+  try {
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+    if (orders.length) {
+      localStorage.setItem(LEGACY_ORDER_STORAGE_KEY, JSON.stringify(orders[0]));
+    }
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function setOrderView(view) {
+  activeOrderView = view === "history" ? "history" : "pending";
+  renderOrders();
+}
+
+function renderOrders() {
+  const pendingOrders = orders.filter((order) => order.status === "pending");
+  const historyOrders = orders.filter((order) => order.status !== "pending");
+  const currentOrders = activeOrderView === "history" ? historyOrders : pendingOrders;
+  const pendingTab = document.querySelector(".order-tab[onclick*=pending]");
+  const historyTab = document.querySelector(".order-tab[onclick*=history]");
+
+  document.getElementById("pendingOrderCount").textContent = pendingOrders.length;
+  document.getElementById("historyOrderCount").textContent = historyOrders.length;
+  pendingTab.classList.toggle("active", activeOrderView === "pending");
+  pendingTab.setAttribute("aria-pressed", String(activeOrderView === "pending"));
+  historyTab.classList.toggle("active", activeOrderView === "history");
+  historyTab.setAttribute("aria-pressed", String(activeOrderView === "history"));
+
+  if (!currentOrders.length) {
+    document.getElementById("orderList").innerHTML = activeOrderView === "pending"
+      ? '<p class="order-empty">No tienes pedidos pendientes.</p>'
+      : '<p class="order-empty">Aún no tienes pedidos en el historial.</p>';
+    return;
+  }
+
+  document.getElementById("orderList").innerHTML = currentOrders.map((order) => {
+    const date = order.fecha
+      ? new Date(order.fecha).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })
+      : "Fecha no disponible";
+    const items = Array.isArray(order.detalle_pedido) ? order.detalle_pedido : [];
+    const itemTotal = items.reduce((sum, item) => {
+      const product = products.find((entry) => entry.id === item.id);
+      return sum + ((product?.price ?? Number(item.price) ?? 0) + (Number(item.extra) || 0)) * (Number(item.qty) || 1);
+    }, 0);
+    const itemMarkup = items.map((item) => {
+      const product = products.find((entry) => entry.id === item.id);
+      const name = product?.name || item.nombre || "Producto";
+      const customization = `${item.color && item.color !== "Original" ? `${item.color} · ` : ""}${item.size || ""}`;
+      return `<li>${escapeHtml(name)}${customization ? ` · ${escapeHtml(customization)}` : ""} × ${Number(item.qty) || 1}</li>`;
+    }).join("");
+    const status = order.status === "pending" ? "Pendiente" : "Recibido";
+
+    return `
+      <article class="order-card">
+        <div class="order-card-header">
+          <div><b>Pedido ${escapeHtml(order.id)}</b><time>${escapeHtml(date)}</time></div>
+          <span class="order-status ${order.status === "pending" ? "is-pending" : "is-received"}">${status}</span>
+        </div>
+        <ul class="order-items">${itemMarkup || "<li>Detalle no disponible</li>"}</ul>
+        <div class="order-card-footer">
+          <span>Retiro: ${escapeHtml(order.punto_retiro || "No especificado")}</span>
+          <b>Total: ${money(itemTotal)}</b>
+        </div>
+        ${order.status === "pending"
+          ? `<button class="btn dark order-received" type="button" onclick="markOrderReceived('${escapeHtml(order.id)}')">Marcar como recibido</button>`
+          : ""}
+      </article>
+    `;
+  }).join("");
+}
+
+function markOrderReceived(orderId) {
+  const order = orders.find((entry) => entry.id === orderId && entry.status === "pending");
+  if (!order) return;
+
+  order.status = "received";
+  if (!saveOrders()) {
+    order.status = "pending";
+    showStatus("No se pudo actualizar el pedido en este navegador.");
+    return;
+  }
+
+  activeOrderView = "history";
+  renderOrders();
+  showStatus(`Pedido ${order.id} movido al historial.`);
+}
+
 function confirmOrder() {
   const nameField = document.getElementById("name");
   const emailField = document.getElementById("email");
@@ -507,10 +622,18 @@ function confirmOrder() {
     fecha: new Date().toISOString()
   };
 
-  localStorage.setItem("amigurumiland_last_order", JSON.stringify(order));
+  orders.unshift({ ...order, status: "pending" });
+  if (!saveOrders()) {
+    orders.shift();
+    error.textContent = "No se pudo guardar el pedido en este navegador. Libera espacio e inténtalo otra vez.";
+    return;
+  }
+
   cart = [];
   saveCart();
   closeCheckout();
+  activeOrderView = "pending";
+  renderOrders();
   showStatus(`Pedido ${order.id} guardado en este navegador. No se procesó ningún pago.`);
 }
 
@@ -575,4 +698,5 @@ document.getElementById("email").addEventListener("input", () => {
 
 renderProducts();
 renderCart();
+renderOrders();
 
