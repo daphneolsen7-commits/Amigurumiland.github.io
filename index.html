@@ -25,7 +25,7 @@
         <nav class="site-nav" id="site-nav" aria-label="Navegación principal">
             <a href="#inicio" onclick="closeNav()">Inicio</a>
             <a href="#catalogo" onclick="closeNav()">Productos</a>
-            <a href="#mis-pedidos" onclick="closeNav()">Mis pedidos</a>
+            <a href="#consultar-pedido" onclick="closeNav()">Consultar pedido</a>
             <a href="#faq" onclick="closeNav()">FAQ</a>
             <a href="#contacto" onclick="closeNav()">Contacto</a>
         </nav>
@@ -38,7 +38,7 @@
             <section id="inicio" class="hero">
                 <div>
                     <h1>Pequeños amigos,<br>grandes historias.</h1>
-                    <p>Muñecos tejidos a mano con cariño en lana acrílica. Consulta las opciones de personalización disponibles en cada producto, envíos a Quito.</p><a class="btn dark"
+                    <p>Muñecos tejidos a mano con cariño en lana acrílica. Consulta las opciones de personalización disponibles en cada producto. Envíos a Quito.</p><a class="btn dark"
                         href="#catalogo">Ver productos</a>
                 </div>
                 <div class="hero-art">
@@ -63,17 +63,20 @@
                     </select></div>
                 <div id="products" class="grid" aria-live="polite"></div>
             </section>
-            <section id="mis-pedidos" class="section order-history">
-                <h2>Mis pedidos</h2>
-                <div class="order-tabs" role="group" aria-label="Filtrar pedidos">
-                    <button class="order-tab active" type="button" aria-pressed="true" onclick="setOrderView('pending')">
-                        Pendientes <span id="pendingOrderCount">0</span>
-                    </button>
-                    <button class="order-tab" type="button" aria-pressed="false" onclick="setOrderView('history')">
-                        Historial <span id="historyOrderCount">0</span>
-                    </button>
-                </div>
-                <div id="orderList" class="order-list" aria-live="polite"></div>
+            <section id="consultar-pedido" class="section order-history">
+                <h2>Consultar pedido</h2>
+                <p class="muted">Ingresa el código de tu pedido y el correo que usaste al comprar.</p>
+                <form class="order-lookup-form" onsubmit="event.preventDefault(); lookupOrder()">
+                    <label for="orderCode">Código del pedido</label>
+                    <input class="field" id="orderCode" name="orderCode" required placeholder="Ej. AM-123456">
+                    <label for="orderEmail">Correo de compra</label>
+                    <input class="field" id="orderEmail" name="orderEmail" type="email" required
+                        autocomplete="email" placeholder="correo@ejemplo.com">
+                    <br>
+                    <br>
+                    <button class="btn dark" type="submit">Consultar</button>
+                </form>
+                <div id="orderLookupResult" class="order-list" aria-live="polite"></div>
             </section>
             <section id="cotizacion" class="section custom-request">
                 <h2>Cotiza tu amigurumi personalizado</h2>
@@ -102,7 +105,6 @@
                             </select></label>
                         <label>Colores<input class="field" name="Colores" type="text" required
                             placeholder="Ej.: crema y verde"></label>
-                        <label>Fecha deseada<input class="field" name="Fecha deseada" type="date" required></label>
                         <label>Enlace de referencia (opcional)<input class="field" name="Referencia" type="url"
                             placeholder="https://..."></label>
                         <label class="form-wide">Detalles adicionales<textarea class="field" name="Detalles adicionales"
@@ -128,11 +130,11 @@
                 </details>
                 <details>
                     <summary>¿Qué métodos de pago aceptan?</summary>
-                    <p>El prototipo permite seleccionar tarjeta, transferencia o PayPal para simular el pedido. No se procesa ningún pago real.</p>
+                    <p>Está disponible para seleccionar tarjeta, transferencia o PayPal para simular el pedido. No se procesa ningún pago real.</p>
                 </details>
                 <details>
                     <summary>¿Necesito WhatsApp para comprar?</summary>
-                    <p>No. WhatsApp es opcional para resolver dudas.</p>
+                    <p>No. WhatsApp es opcional para resolver dudas o sirve como medio de contacto para cotizar.</p>
                 </details>
             </section>
             <section id="contacto" class="section">
