@@ -83,7 +83,6 @@ function loadOrders() {
 
 let cart = loadCart();
 let orders = loadOrders();
-let activeOrderView = "pending";
 let lastFocusedElement = null;
 let statusTimeout;
 
@@ -517,33 +516,18 @@ function saveOrders() {
   }
 }
 
-function setOrderView(view) {
-  activeOrderView = view === "history" ? "history" : "pending";
-  renderOrders();
-}
+function lookupOrder() {
+  const code = document.getElementById("orderCode").value.trim().toLowerCase();
+  const email = document.getElementById("orderEmail").value.trim().toLowerCase();
+  const result = document.getElementById("orderLookupResult");
+  const order = orders.find((entry) => entry.id.toLowerCase() === code
+    && String(entry.email || "").trim().toLowerCase() === email);
 
-function renderOrders() {
-  const pendingOrders = orders.filter((order) => order.status === "pending");
-  const historyOrders = orders.filter((order) => order.status !== "pending");
-  const currentOrders = activeOrderView === "history" ? historyOrders : pendingOrders;
-  const pendingTab = document.querySelector(".order-tab[onclick*=pending]");
-  const historyTab = document.querySelector(".order-tab[onclick*=history]");
-
-  document.getElementById("pendingOrderCount").textContent = pendingOrders.length;
-  document.getElementById("historyOrderCount").textContent = historyOrders.length;
-  pendingTab.classList.toggle("active", activeOrderView === "pending");
-  pendingTab.setAttribute("aria-pressed", String(activeOrderView === "pending"));
-  historyTab.classList.toggle("active", activeOrderView === "history");
-  historyTab.setAttribute("aria-pressed", String(activeOrderView === "history"));
-
-  if (!currentOrders.length) {
-    document.getElementById("orderList").innerHTML = activeOrderView === "pending"
-      ? '<p class="order-empty">No tienes pedidos pendientes.</p>'
-      : '<p class="order-empty">Aún no tienes pedidos en el historial.</p>';
+  if (!order) {
+    result.innerHTML = '<p class="order-empty">No encontramos un pedido con esos datos. Verifica el código y el correo.</p>';
     return;
   }
 
-  document.getElementById("orderList").innerHTML = currentOrders.map((order) => {
     const date = order.fecha
       ? new Date(order.fecha).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })
       : "Fecha no disponible";
@@ -560,7 +544,7 @@ function renderOrders() {
     }).join("");
     const status = order.status === "pending" ? "Pendiente" : "Recibido";
 
-    return `
+  result.innerHTML = `
       <article class="order-card">
         <div class="order-card-header">
           <div><b>Pedido ${escapeHtml(order.id)}</b><time>${escapeHtml(date)}</time></div>
@@ -571,28 +555,8 @@ function renderOrders() {
           <span>Retiro: ${escapeHtml(order.punto_retiro || "No especificado")}</span>
           <b>Total: ${money(itemTotal)}</b>
         </div>
-        ${order.status === "pending"
-          ? `<button class="btn dark order-received" type="button" onclick="markOrderReceived('${escapeHtml(order.id)}')">Marcar como recibido</button>`
-          : ""}
       </article>
     `;
-  }).join("");
-}
-
-function markOrderReceived(orderId) {
-  const order = orders.find((entry) => entry.id === orderId && entry.status === "pending");
-  if (!order) return;
-
-  order.status = "received";
-  if (!saveOrders()) {
-    order.status = "pending";
-    showStatus("No se pudo actualizar el pedido en este navegador.");
-    return;
-  }
-
-  activeOrderView = "history";
-  renderOrders();
-  showStatus(`Pedido ${order.id} movido al historial.`);
 }
 
 function confirmOrder() {
@@ -633,8 +597,9 @@ function confirmOrder() {
   cart = [];
   saveCart();
   closeCheckout();
-  activeOrderView = "pending";
-  renderOrders();
+  document.getElementById("orderCode").value = order.id;
+  document.getElementById("orderEmail").value = order.email;
+  lookupOrder();
   showStatus(`Pedido ${order.id} guardado en este navegador. No se procesó ningún pago.`);
 }
 
@@ -710,4 +675,3 @@ document.getElementById("email").addEventListener("input", () => {
 
 renderProducts();
 renderCart();
-renderOrders();
