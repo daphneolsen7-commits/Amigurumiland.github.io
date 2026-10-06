@@ -814,6 +814,23 @@ footer {
   margin: 8px 0;
 }
 
+.payment-simulation {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.payment-simulation[hidden] {
+  display: none;
+}
+
+.payment-simulation p {
+  margin: 0;
+}
+
 .notice {
   padding: 12px;
   background: #f5eee8;
