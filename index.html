@@ -193,40 +193,37 @@
                                 value="Centro Norte" checked> Norte-centro comercial Quicentro</label><label class="pay"><input type="radio"
                                 name="pickup" value="Centro Histórico"> Centro Histórico-Plaza grande</label><label
                             class="pay"><input type="radio" name="pickup" value="Cumbayá"> Cumbayá-Paseo San Francisco</label>
-                        <h3>Método de pago (simulación)</h3><label class="pay"><input type="radio" name="payment" value="Tarjeta"
+                        <h3>Método de pago</h3><label class="pay"><input type="radio" name="payment" value="Tarjeta"
                                 checked> Tarjeta</label><label class="pay"><input type="radio" name="payment"
                                 value="Transferencia bancaria"> Transferencia bancaria</label><label class="pay"><input
                                 type="radio" name="payment" value="PayPal"> PayPal</label>
                         <div id="cardPaymentFields" class="payment-simulation" aria-label="Datos simulados de tarjeta">
-                            <p class="muted">Usa datos ficticios. No ingreses una tarjeta real.</p>
                             <label for="cardholderName">Nombre del titular</label>
                             <input class="field" id="cardholderName" autocomplete="off" placeholder="Nombre como aparece en la tarjeta">
-                            <label for="cardNumber">Número de tarjeta de prueba</label>
+                            <label for="cardNumber">Número de tarjeta</label>
                             <input class="field" id="cardNumber" inputmode="numeric" autocomplete="off" maxlength="19"
                                 placeholder="4242 4242 4242 4242">
                             <label for="cardExpiry">Vencimiento (MM/AA)</label>
                             <input class="field" id="cardExpiry" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="MM/AA">
-                            <label for="cardCvv">CVV ficticio</label>
+                            <label for="cardCvv">CVV</label>
                             <input class="field" id="cardCvv" type="password" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="3 o 4 dígitos">
                         </div>
                         <div id="transferPaymentFields" class="payment-simulation" aria-label="Datos simulados de transferencia" hidden>
-                            <p class="muted">Cuenta ficticia para la simulación. No realices transferencias.</p>
-                            <p><b>Banco Amigurumi · Cuenta de prueba 000-000000-0</b></p>
-                            <label for="transferReference">Referencia simulada</label>
+                            <p><b>Cuenta de prueba 000-000000-0</b></p>
+                            <label for="transferReference">Referencia</label>
                             <input class="field" id="transferReference" autocomplete="off" minlength="6" maxlength="20"
                                 pattern="[A-Za-z0-9-]{6,20}" placeholder="Ej. TRANSF-123">
                         </div>
                         <div id="paypalPaymentFields" class="payment-simulation" aria-label="Datos simulados de PayPal" hidden>
-                            <p class="muted">Ingresa un correo de prueba. No se solicitará contraseña ni se abrirá PayPal.</p>
                             <label for="paypalEmail">Correo de la cuenta de prueba</label>
                             <input class="field" id="paypalEmail" type="email" autocomplete="off" placeholder="prueba@ejemplo.com">
                         </div>
-                        <p class="notice">Prototipo académico: no procesa pagos ni envía pedidos reales. El pedido se guarda en este navegador.</p>
+                        <p class="notice">Prototipo académico: no procesa pagos reales. El pedido solo se guarda en este navegador.</p>
                     </div>
                     <div>
                         <h3>Resumen</h3>
                         <div id="checkoutSummary"></div><button id="confirmOrderButton" class="btn dark" type="button" style="width:100%"
-                            onclick="confirmOrder()">Simular pago con tarjeta</button>
+                            onclick="confirmOrder()">Pagar</button>
                     </div>
                 </div>
             </div>
