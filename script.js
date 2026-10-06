@@ -506,7 +506,7 @@ function updatePaymentFields() {
   document.getElementById("paypalPaymentFields").hidden = method !== "PayPal";
   document.getElementById("confirmOrderButton").textContent = method === "Transferencia bancaria"
     ? "Registrar transferencia"
-    : `Simular pago con ${method}`;
+    : method === "PayPal" ? "Continuar con PayPal" : "Pagar con tarjeta";
   document.getElementById("checkoutError").textContent = "";
 }
 
