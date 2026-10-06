@@ -489,6 +489,7 @@ function openCheckout() {
       })
       .join("") + `<hr><h3>Total: ${money(total)}</h3>`;
   document.getElementById("checkoutError").textContent = "";
+  updatePaymentFields();
   document.getElementById("checkoutModal").classList.add("show");
   document.getElementById("name").focus();
 }
@@ -496,6 +497,98 @@ function openCheckout() {
 function closeCheckout() {
   document.getElementById("checkoutModal").classList.remove("show");
   lastFocusedElement?.focus();
+}
+
+function updatePaymentFields() {
+  const method = document.querySelector("[name=payment]:checked").value;
+  document.getElementById("cardPaymentFields").hidden = method !== "Tarjeta";
+  document.getElementById("transferPaymentFields").hidden = method !== "Transferencia bancaria";
+  document.getElementById("paypalPaymentFields").hidden = method !== "PayPal";
+  document.getElementById("confirmOrderButton").textContent = method === "Transferencia bancaria"
+    ? "Registrar transferencia"
+    : `Simular pago con ${method}`;
+  document.getElementById("checkoutError").textContent = "";
+}
+
+function isValidCardNumber(value) {
+  if (!/^[\d\s-]+$/.test(value.trim())) return false;
+  const digits = value.replace(/\D/g, "");
+  if (!/^\d{16}$/.test(digits)) return false;
+
+  let sum = 0;
+  let doubleDigit = false;
+  for (let index = digits.length - 1; index >= 0; index--) {
+    let digit = Number(digits[index]);
+    if (doubleDigit) digit = digit * 2 > 9 ? digit * 2 - 9 : digit * 2;
+    sum += digit;
+    doubleDigit = !doubleDigit;
+  }
+  return sum % 10 === 0;
+}
+
+function validatePaymentDetails() {
+  const method = document.querySelector("[name=payment]:checked").value;
+  const error = document.getElementById("checkoutError");
+  let field;
+
+  if (method === "Tarjeta") {
+    field = document.getElementById("cardholderName");
+    if (!field.value.trim()) {
+      error.textContent = "Escribe el nombre del titular (puede ser ficticio).";
+      field.focus();
+      return null;
+    }
+
+    field = document.getElementById("cardNumber");
+    if (!isValidCardNumber(field.value)) {
+      error.textContent = "Ingresa un número ficticio de 16 dígitos válido para la simulación.";
+      field.focus();
+      return null;
+    }
+
+    field = document.getElementById("cardExpiry");
+    const expiry = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(field.value.trim());
+    if (!expiry) {
+      error.textContent = "Escribe el vencimiento en formato MM/AA.";
+      field.focus();
+      return null;
+    }
+    const currentDate = new Date();
+    const expiryYear = 2000 + Number(expiry[2]);
+    const expiryMonth = Number(expiry[1]);
+    if (expiryYear < currentDate.getFullYear()
+      || (expiryYear === currentDate.getFullYear() && expiryMonth < currentDate.getMonth() + 1)) {
+      error.textContent = "La fecha de vencimiento no puede estar en el pasado.";
+      field.focus();
+      return null;
+    }
+
+    field = document.getElementById("cardCvv");
+    if (!/^\d{3,4}$/.test(field.value)) {
+      error.textContent = "El CVV de prueba debe tener 3 o 4 dígitos.";
+      field.focus();
+      return null;
+    }
+    return { paymentStatus: "approved" };
+  }
+
+  if (method === "Transferencia bancaria") {
+    field = document.getElementById("transferReference");
+    if (!/^[A-Za-z0-9-]{6,20}$/.test(field.value.trim())) {
+      error.textContent = "La referencia debe tener entre 6 y 20 letras, números o guiones.";
+      field.focus();
+      return null;
+    }
+    return { paymentStatus: "pending_verification", reference: field.value.trim() };
+  }
+
+  field = document.getElementById("paypalEmail");
+  if (!field.value.trim() || !field.checkValidity()) {
+    error.textContent = "Ingresa un correo válido para la cuenta de prueba de PayPal.";
+    field.focus();
+    return null;
+  }
+  return { paymentStatus: "approved" };
 }
 
 function closeOnBackdrop(event, modalId) {
@@ -543,6 +636,10 @@ function lookupOrder() {
       return `<li>${escapeHtml(name)}${customization ? ` · ${escapeHtml(customization)}` : ""} × ${Number(item.qty) || 1}</li>`;
     }).join("");
     const status = order.status === "pending" ? "Pendiente" : "Recibido";
+    const paymentStatus = {
+      approved: "Aprobado (simulación)",
+      pending_verification: "Transferencia por verificar"
+    }[order.payment_status] || "Sin información";
 
   result.innerHTML = `
       <article class="order-card">
@@ -555,6 +652,7 @@ function lookupOrder() {
           <span>Retiro: ${escapeHtml(order.punto_retiro || "No especificado")}</span>
           <b>Total: ${money(itemTotal)}</b>
         </div>
+        <p class="muted">Pago: ${paymentStatus}</p>
       </article>
     `;
 }
@@ -577,12 +675,17 @@ function confirmOrder() {
     return;
   }
 
+  const payment = validatePaymentDetails();
+  if (!payment) return;
+
   let order = {
     id: "AM-" + Date.now().toString().slice(-6),
     usuario: n,
     email: e,
     punto_retiro: document.querySelector("[name=pickup]:checked").value,
     metodo_pago: document.querySelector("[name=payment]:checked").value,
+    payment_status: payment.paymentStatus,
+    ...(payment.reference ? { payment_reference: payment.reference } : {}),
     detalle_pedido: cart,
     fecha: new Date().toISOString()
   };
@@ -600,7 +703,9 @@ function confirmOrder() {
   document.getElementById("orderCode").value = order.id;
   document.getElementById("orderEmail").value = order.email;
   lookupOrder();
-  showStatus(`Pedido ${order.id} guardado en este navegador. No se procesó ningún pago.`);
+  showStatus(payment.paymentStatus === "approved"
+    ? `Pago simulado aprobado. Pedido ${order.id} guardado en este navegador.`
+    : `Pedido ${order.id} guardado. La transferencia quedó pendiente de verificación.`);
 }
 
 function toggleNav() {
@@ -672,6 +777,10 @@ document.getElementById("name").addEventListener("input", () => {
 document.getElementById("email").addEventListener("input", () => {
   document.getElementById("checkoutError").textContent = "";
 });
+document.querySelectorAll("[name=payment]").forEach((option) => {
+  option.addEventListener("change", updatePaymentFields);
+});
 
 renderProducts();
 renderCart();
+updatePaymentFields();
