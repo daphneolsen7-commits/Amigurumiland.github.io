@@ -105,13 +105,13 @@ function renderProducts() {
   document.getElementById("products").innerHTML = results.length
     ? results.map(
       (p) => `
-        <article class="card">
+        <article class="card" tabindex="0" role="button" aria-label="Abrir producto ${p.name}" onclick="openProduct(${p.id})" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openProduct(${p.id}); }">
           <img class="card-img" src="${img(p)}" alt="${p.name}" onerror="this.onerror=null;this.src='${fallbackImage(p)}'">
           <div class="card-body">
             <b>${p.name}</b>
             <div class="muted">${p.cat} · ${p.stock} disponibles</div>
             <div class="price">${money(p.price)}</div>
-            <button class="btn dark" style="width:100%" onclick="openProduct(${p.id})">Ver producto</button>
+            <button class="btn dark" style="width:100%" type="button" onclick="event.stopPropagation(); openProduct(${p.id})">Ver producto</button>
           </div>
         </article>
       `
