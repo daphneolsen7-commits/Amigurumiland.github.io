@@ -624,6 +624,13 @@ function lookupOrder() {
     const date = order.fecha
       ? new Date(order.fecha).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })
       : "Fecha no disponible";
+    const pickupAvailableAt = order.fecha_disponible_retiro
+      ? new Date(order.fecha_disponible_retiro)
+      : order.fecha ? new Date(order.fecha) : null;
+    if (pickupAvailableAt && !order.fecha_disponible_retiro) pickupAvailableAt.setDate(pickupAvailableAt.getDate() + 7);
+    const pickupAvailableDate = pickupAvailableAt && !Number.isNaN(pickupAvailableAt.getTime())
+      ? pickupAvailableAt.toLocaleDateString("es-ES", { dateStyle: "long" })
+      : "Fecha no disponible";
     const items = Array.isArray(order.detalle_pedido) ? order.detalle_pedido : [];
     const itemTotal = items.reduce((sum, item) => {
       const product = products.find((entry) => entry.id === item.id);
@@ -652,6 +659,7 @@ function lookupOrder() {
           <span>Retiro: ${escapeHtml(order.punto_retiro || "No especificado")}</span>
           <b>Total: ${money(itemTotal)}</b>
         </div>
+        <p class="muted">Disponible para recoger desde: ${escapeHtml(pickupAvailableDate)}</p>
         <p class="muted">Pago: ${paymentStatus}</p>
       </article>
     `;
@@ -678,6 +686,10 @@ function confirmOrder() {
   const payment = validatePaymentDetails();
   if (!payment) return;
 
+  const orderDate = new Date();
+  const pickupAvailableAt = new Date(orderDate);
+  pickupAvailableAt.setDate(pickupAvailableAt.getDate() + 7);
+
   let order = {
     id: "AM-" + Date.now().toString().slice(-6),
     usuario: n,
@@ -687,7 +699,8 @@ function confirmOrder() {
     payment_status: payment.paymentStatus,
     ...(payment.reference ? { payment_reference: payment.reference } : {}),
     detalle_pedido: cart,
-    fecha: new Date().toISOString()
+    fecha: orderDate.toISOString(),
+    fecha_disponible_retiro: pickupAvailableAt.toISOString()
   };
 
   orders.unshift({ ...order, status: "pending" });
