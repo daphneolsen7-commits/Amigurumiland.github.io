@@ -38,7 +38,7 @@ function renderProducts() {
     const box = document.getElementById("products"); if (!box) return;
     const q = (document.getElementById("search")?.value || "").toLowerCase().trim(), c = document.getElementById("category")?.value || "";
     const result = products.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!c || p.cat === c));
-    box.innerHTML = result.length ? result.map(p => `<a class="card product-card" href="producto.html?id=${p.id}"><img class="card-img" src="${img(p)}" alt="${p.name}" onerror="this.onerror=null;this.src='assets/amigurumis.png'"><div class="card-body"><div class="muted">${p.cat}</div><h2>${p.name}</h2><div class="price">${money(p.price)}</div><p class="muted">${p.stock} disponibles</p><span class="btn dark full card-action">Ver producto</span></div></a>`).join("") : '<p class="empty-results">No encontramos productos con esos filtros.</p>';
+    box.innerHTML = result.length ? result.map(p => `<a class="card product-card" href="./producto.html?id=${encodeURIComponent(p.id)}" aria-label="Ver detalles de ${escapeHtml(p.name)}"><img class="card-img" src="${img(p)}" alt="${escapeHtml(p.name)}" onerror="this.onerror=null;this.src='assets/amigurumis.png'"><div class="card-body"><div class="muted">${escapeHtml(p.cat)}</div><h2>${escapeHtml(p.name)}</h2><div class="price">${money(p.price)}</div><p class="muted">${p.stock} disponibles</p><span class="btn dark full card-action">Ver producto</span></div></a>`).join("") : '<p class="empty-results">No encontramos productos con esos filtros.</p>';
 }
 function getProduct() { return products.find(p => String(p.id) === new URLSearchParams(location.search).get("id")) }
 function openProductPage() {
