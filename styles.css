@@ -171,6 +171,12 @@ main.container {
     line-height: 1.65
 }
 
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px
+}
+
 .hero-art {
     min-height: 390px;
     border-radius: 28px;
@@ -733,6 +739,33 @@ main.container {
     display: flex;
     gap: 12px;
     justify-content: center
+}
+
+.order-confirmation-block + .order-confirmation-block {
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    margin-top: 18px
+}
+
+.order-confirmation-block h2 {
+    font-size: 18px;
+    margin: 0 0 12px
+}
+
+.order-code-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px
+}
+
+.order-code-row strong {
+    font-size: 24px;
+    font-variant-numeric: tabular-nums
+}
+
+.order-confirmation-block p {
+    margin: 8px 0
 }
 
 .lookup-card {
