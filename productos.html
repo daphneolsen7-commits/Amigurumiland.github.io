@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Amigurumiland | Productos</title>
+    <title>Amigurumiland | Producto</title>
     <link rel="icon" type="image/png" href="assets/Logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,22 +31,8 @@
     </header>
     <div id="statusMessage" class="toast" role="status" aria-live="polite"></div>
     <main class="container">
-        <section class="section page-heading">
-            <p class="eyebrow">CATÁLOGO</p>
-            <h1>Nuestros amigurumis</h1>
-            <p class="muted">Precios base para el tamaño pequeño (15 cm). Selecciona un producto para ver sus opciones.
-            </p>
-        </section>
-        <section class="section">
-            <div class="toolbar"><label class="sr-only" for="search">Buscar productos</label><input id="search"
-                    type="search" placeholder="Buscar productos..." oninput="renderProducts()"><label class="sr-only"
-                    for="category">Categoría</label><select id="category" onchange="renderProducts()">
-                    <option value="">Todas las categorías</option>
-                    <option>Animales</option>
-                    <option>Personajes</option>
-                    <option>Regalos</option>
-                </select></div>
-            <div id="products" class="grid" aria-live="polite"></div>
+        <section class="section" id="productPage"><a class="back-link" href="productos.html">← Volver a productos</a>
+            <div id="productDetail"></div>
         </section>
     </main>
     <footer>
