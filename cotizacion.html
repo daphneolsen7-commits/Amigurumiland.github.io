@@ -36,10 +36,10 @@
             <h1>Cotiza tu amigurumi</h1>
         </section>
         <section class="form-card">
-            <form onsubmit="event.preventDefault();submitQuote()"><label>Nombre<input class="field" id="quoteName"
+            <form id="quoteForm" onsubmit="event.preventDefault();submitQuote()"><label>Nombre<input class="field" id="quoteName"
                         required placeholder="Tu nombre"></label><label>Correo<input class="field" id="quoteEmail"
                         type="email" required placeholder="correo@ejemplo.com"></label><label>¿Qué amigurumi tienes en
-                    mente?<textarea class="field" id="quoteDesign" required rows="4"
+                    mente?<textarea class="field" id="quoteDesign" maxlength="1000" required rows="4"
                         placeholder="Personaje, animal o temática"></textarea></label>
                 <div class="two-fields"><label>Tamaño<select class="field" id="quoteSize" required>
                             <option value="">Elige un tamaño</option>
@@ -48,9 +48,12 @@
                             <option>Grande (30 cm)</option>
                         </select></label><label>Colores<input class="field" id="quoteColors" required
                             placeholder="Ej. crema y verde"></label></div><label>Detalles adicionales<textarea
-                        class="field" id="quoteDetails" rows="4" placeholder="Detalles importantes"></textarea></label>
+                        class="field" id="quoteDetails" maxlength="1000" rows="4" placeholder="Detalles importantes"></textarea></label>
+                <label>Imágenes de referencia<input class="field" id="quoteImages" type="file"
+                        accept="image/jpeg,image/png,image/webp" multiple><small class="muted">Hasta 3 imágenes.</small>
+                    <span id="quoteImagePreview" class="image-previews" aria-live="polite"></span></label>
                 <p id="quoteFeedback" class="form-error" role="status"></p><button class="btn dark" type="submit">Enviar
-                    solicitud de prueba</button>
+                    solicitud</button>
             </form>
         </section>
     </main>
@@ -67,7 +70,7 @@
                 <p>daphneolsen7@gmail.com</p>
             </div>
             <div><b>Proyecto</b>
-                <p>Prototipo académico HCI.</p>
+                <p>Atención personalizada para cada pedido.</p>
             </div>
         </div>
     </footer>
