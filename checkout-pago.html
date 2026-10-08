@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Amigurumiland | Pago simulado</title>
+    <title>Amigurumiland | Pago</title>
     <link rel="icon" type="image/png" href="assets/Logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,23 +47,22 @@
                                 onchange="updatePaymentFields()"><span><b>PayPal</b></span></label>
                     </div>
                     <div id="cardPaymentFields" class="payment-fields"><label>Nombre del titular<input class="field"
-                                id="cardholderName" autocomplete="cc-name" placeholder="Nombre de prueba"></label><label>Número de
+                                id="cardholderName" autocomplete="cc-name" placeholder="Nombre como aparece en la tarjeta"></label><label>Número de
                             tarjeta<input class="field" id="cardNumber" inputmode="numeric" maxlength="19"
-                                autocomplete="cc-number" placeholder="4242 4242 4242 4242"></label>
+                                autocomplete="cc-number" placeholder="1234 5678 9012 3456"></label>
                         <div class="two-fields"><label>Vencimiento<input class="field" id="cardExpiry" autocomplete="cc-exp"
                                     inputmode="numeric" maxlength="5" placeholder="MM/AA"></label><label>CVV<input
                                     class="field" id="cardCvv" inputmode="numeric" maxlength="4" type="password"
                                     autocomplete="cc-csc" placeholder="123"></label></div>
-                        <p class="muted">Simulación local: no se realiza ningún cobro y los datos de la tarjeta no se guardan.</p>
                     </div>
                     <div id="transferPaymentFields" class="payment-fields" hidden>
-                        <p><b>Banco de prueba:</b> Banco Amigo<br><b>Titular:</b> Amigurumiland<br><b>Cuenta de prueba:</b> 000-000000-0</p><label>Referencia de transferencia<input class="field"
+                        <p>Solicita los datos bancarios por WhatsApp y registra aquí la referencia de tu transferencia.</p>
+                        <label>Referencia de transferencia<input class="field"
                                 id="transferReference" placeholder="TRANSF-123456" maxlength="20"></label>
-                        <p class="muted">No realices una transferencia real. La referencia solo se registra en la simulación.</p>
                     </div>
                     <div id="paypalPaymentFields" class="payment-fields" hidden><label>Correo de PayPal<input class="field"
-                                id="paypalEmail" type="email" autocomplete="email" placeholder="prueba@ejemplo.com"></label>
-                        <p class="muted">Se simulará la autorización. No se abrirá ni cobrará desde PayPal.</p></div>
+                                id="paypalEmail" type="email" autocomplete="email" placeholder="correo@paypal.com"></label>
+                    </div>
                     <button class="btn dark full" type="button" onclick="processPayment()">Confirmar pago</button>
                 </div>
                 <div class="summary-box">
@@ -86,7 +85,7 @@
                 <p>daphneolsen7@gmail.com</p>
             </div>
             <div><b>Proyecto</b>
-                <p>Prototipo académico HCI.</p>
+                <p>Atención personalizada para cada pedido.</p>
             </div>
         </div>
     </footer>
