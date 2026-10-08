@@ -29,14 +29,14 @@
 <div class="checkout-layout"><div class="form-card"><a class="back-link" href="checkout-datos.html">← Volver a datos</a><h1>Método de pago</h1>
 <p class="notice">Simulación académica: no se conecta con ningún banco, tarjeta o cuenta real.</p>
 <div id="paymentError" class="form-error" role="alert"></div>
-<div class="payment-methods"><label class="radio-card"><input type="radio" name="payment" value="Tarjeta" checked onchange="updatePaymentFields()"><span><b>Tarjeta de prueba</b><small>Usa datos ficticios válidos</small></span></label>
-<label class="radio-card"><input type="radio" name="payment" value="Transferencia bancaria" onchange="updatePaymentFields()"><span><b>Transferencia de prueba</b><small>Solo registra una referencia</small></span></label>
-<label class="radio-card"><input type="radio" name="payment" value="PayPal" onchange="updatePaymentFields()"><span><b>PayPal de prueba</b><small>No inicia sesión ni cobra</small></span></label></div>
+<div class="payment-methods"><label class="radio-card"><input type="radio" name="payment" value="Tarjeta" checked onchange="updatePaymentFields()"><span><b>Tarjeta</b></span></label>
+<label class="radio-card"><input type="radio" name="payment" value="Transferencia bancaria" onchange="updatePaymentFields()"><span><b>Transferencia</b></span></label>
+<label class="radio-card"><input type="radio" name="payment" value="PayPal" onchange="updatePaymentFields()"><span><b>PayPal</b></span></label></div>
 <div id="cardPaymentFields" class="payment-fields"><label>Nombre del titular<input class="field" id="cardholderName" placeholder="Nombre de prueba"></label><label>Número de tarjeta<input class="field" id="cardNumber" inputmode="numeric" maxlength="19" placeholder="4242 4242 4242 4242"></label><div class="two-fields"><label>Vencimiento<input class="field" id="cardExpiry" inputmode="numeric" maxlength="5" placeholder="MM/AA"></label><label>CVV<input class="field" id="cardCvv" inputmode="numeric" maxlength="4" type="password" placeholder="123"></label></div></div>
-<div id="transferPaymentFields" class="payment-fields" hidden><p><b>Cuenta de prueba:</b> 000-000000-0</p><label>Referencia de transferencia<input class="field" id="transferReference" placeholder="TRANSF-123456" maxlength="20"></label></div>
-<div id="paypalPaymentFields" class="payment-fields" hidden><label>Correo de prueba<input class="field" id="paypalEmail" type="email" placeholder="prueba@ejemplo.com"></label></div>
-<button class="btn dark full" type="button" onclick="processPayment()">Confirmar pago de prueba</button></div>
-<div class="summary-box"><h2>Total a simular</h2><div id="paymentSummary"></div></div></div></section></main>
+<div id="transferPaymentFields" class="payment-fields" hidden><p><b>Cuenta:</b> 000-000000-0</p><label>Referencia de transferencia<input class="field" id="transferReference" placeholder="TRANSF-123456" maxlength="20"></label></div>
+<div id="paypalPaymentFields" class="payment-fields" hidden><label>Correo<input class="field" id="paypalEmail" type="email" placeholder="prueba@ejemplo.com"></label></div>
+<button class="btn dark full" type="button" onclick="processPayment()">Confirmar pago</button></div>
+<div class="summary-box"><h2>Total a pagar</h2><div id="paymentSummary"></div></div></div></section></main>
 <footer><div class="footer">
 <div><h3>♡ Amigurumiland</h3><p>Muñecos tejidos a mano y personalizables.</p></div>
 <div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a href="pedido.html">Consultar pedido</a><a href="faq.html">FAQ</a></div>
