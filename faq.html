@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Amigurumiland | FAQ</title>
+    <link rel="icon" type="image/png" href="assets/Logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="nav">
+        <a class="brand" href="index.html"><img src="assets/Logo.png" alt=""><span>Amigurumiland</span> ♡</a>
+        <button class="icon-btn menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false"
+            aria-controls="site-nav" onclick="toggleNav()">☰</button>
+        <nav class="site-nav" id="site-nav" aria-label="Navegación principal">
+            <a href="index.html">Inicio</a>
+            <a href="productos.html">Productos</a>
+            <a href="pedido.html">Consultar pedido</a>
+            <a href="faq.html">FAQ</a>
+            <a href="contacto.html">Contacto</a>
+        </nav>
+        <a class="icon-btn cart-link" href="carrito.html" aria-label="Abrir carrito"><span
+                aria-hidden="true">🛒</span><span class="cart-count" id="cartCount">0</span></a>
+    </header>
+    <div id="statusMessage" class="toast" role="status" aria-live="polite"></div>
+    <main class="container">
+        <section class="section page-heading">
+            <p class="eyebrow">AYUDA</p>
+            <h1>Preguntas frecuentes</h1>
+            <p class="muted">Información para comprar con claridad y confianza.</p>
+        </section>
+        <section class="section faq">
+            <details>
+                <summary>¿Cómo funciona la personalización?</summary>
+                <p>Las opciones de color y tamaño aparecen en la ficha de cada producto antes de agregarlo al carrito.
+                </p>
+            </details>
+            <details>
+                <summary>¿Dónde recibo mi pedido?</summary>
+                <p>Seleccionas uno de nuestros puntos de retiro durante el proceso de compra.</p>
+            </details>
+            <details>
+                <summary>¿Qué métodos de pago hay disponibles?</summary>
+                <p>Se puede pagar con transferencia, tarjeta y Paypal.</p>
+            </details>
+            <details>
+                <summary>¿Necesito WhatsApp para comprar?</summary>
+                <p>No. WhatsApp es opcional para resolver dudas o solicitar una cotización personalizada.</p>
+            </details>
+        </section>
+    </main>
+    <footer>
+        <div class="footer">
+            <div>
+                <h3>♡ Amigurumiland</h3>
+                <p>Muñecos tejidos a mano y personalizables.</p>
+            </div>
+            <div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a
+                    href="pedido.html">Consultar pedido</a><a href="faq.html">FAQ</a></div>
+            <div><b>Contacto</b>
+                <p><a id="waLinkFooter" target="_blank" rel="noopener">WhatsApp</a></p>
+                <p>daphneolsen7@gmail.com</p>
+            </div>
+            <div><b>Proyecto</b>
+                <p>Atención personalizada para cada pedido.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+
+</html>

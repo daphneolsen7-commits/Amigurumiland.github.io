@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Amigurumiland | Datos de compra</title>
+    <link rel="icon" type="image/png" href="assets/Logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="nav">
+        <a class="brand" href="index.html"><img src="assets/Logo.png" alt=""><span>Amigurumiland</span> ♡</a>
+        <button class="icon-btn menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false"
+            aria-controls="site-nav" onclick="toggleNav()">☰</button>
+        <nav class="site-nav" id="site-nav" aria-label="Navegación principal">
+            <a href="index.html">Inicio</a>
+            <a href="productos.html">Productos</a>
+            <a href="pedido.html">Consultar pedido</a>
+            <a href="faq.html">FAQ</a>
+            <a href="contacto.html">Contacto</a>
+        </nav>
+        <a class="icon-btn cart-link" href="carrito.html" aria-label="Abrir carrito"><span
+                aria-hidden="true">🛒</span><span class="cart-count" id="cartCount">0</span></a>
+    </header>
+    <div id="statusMessage" class="toast" role="status" aria-live="polite"></div>
+    <main class="container">
+        <section class="section checkout-page">
+            <div class="checkout-progress"><span class="active">1. Datos</span><span>2. Pago</span><span>3.
+                    Confirmación</span></div>
+            <div class="checkout-layout">
+                <div class="form-card"><a class="back-link" href="carrito.html">← Volver al carrito</a>
+                    <h1>Datos de compra</h1>
+                    <p class="muted">Estos datos se usarán para registrar tu pedido.</p>
+                    <div id="checkoutDataError" class="form-error" role="alert"></div>
+                    <label>Nombre completo<input class="field" id="name" autocomplete="name" required
+                            placeholder="Ej. Ana Pérez"></label>
+                    <label>Correo electrónico<input class="field" id="email" type="email" autocomplete="email" required
+                            placeholder="ana@ejemplo.com"></label>
+                        <h2>Datos para la factura</h2>
+                        <label>Nombre o razón social<input class="field" id="invoiceName" autocomplete="name"
+                            maxlength="80" required placeholder="Nombre completo"></label>
+                        <div class="two-fields">
+                        <label>Tipo de identificación<select class="field" id="invoiceIdType" required>
+                            <option value="cedula">Cédula</option>
+                            <option value="ruc">RUC</option>
+                            </select></label>
+                        <label id="invoiceIdLabel">Número de cédula<input class="field" id="invoiceId"
+                            inputmode="numeric" maxlength="10" autocomplete="off" required
+                            placeholder="10 dígitos"></label>
+                        </div>
+                        <label>Teléfono<input class="field" id="invoicePhone" type="tel" autocomplete="tel"
+                            maxlength="13" required placeholder="09 1234 5678"></label>
+                        <label>Dirección de facturación<textarea class="field" id="invoiceAddress"
+                            autocomplete="street-address" maxlength="160" rows="2" required
+                            placeholder="Calle principal, número y sector"></textarea></label>
+                    <h2>Punto de retiro</h2>
+                    <label class="radio-card"><input type="radio" name="pickup" value="Centro Norte"
+                            checked><span><b>Centro Norte</b><small>Quicentro Shopping</small></span></label>
+                    <label class="radio-card"><input type="radio" name="pickup" value="Centro Histórico"><span><b>Centro
+                                Histórico</b><small>Plaza Grande</small></span></label>
+                    <label class="radio-card"><input type="radio" name="pickup"
+                            value="Cumbayá"><span><b>Cumbayá</b><small>Paseo San Francisco</small></span></label>
+                    <p class="notice">Tu pedido estará disponible para recoger desde 7 días después de confirmarlo.</p>
+                    <button class="btn dark full" type="button" onclick="saveCheckoutData()">Continuar al pago</button>
+                </div>
+                <div class="summary-box">
+                    <h2>Tu pedido</h2>
+                    <div id="checkoutSummary"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <div class="footer">
+            <div>
+                <h3>♡ Amigurumiland</h3>
+                <p>Muñecos tejidos a mano y personalizables.</p>
+            </div>
+            <div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a
+                    href="pedido.html">Consultar pedido</a><a href="faq.html">FAQ</a></div>
+            <div><b>Contacto</b>
+                <p><a id="waLinkFooter" target="_blank" rel="noopener">WhatsApp</a></p>
+                <p>daphneolsen7@gmail.com</p>
+            </div>
+            <div><b>Proyecto</b>
+                <p>Atención personalizada para cada pedido.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+
+</html>
