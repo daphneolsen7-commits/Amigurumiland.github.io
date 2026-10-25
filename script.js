@@ -323,214 +323,415 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-/* --- Gestión de cuenta y sesión del navegador --- */
+/* --- Autenticación con Supabase --- */
 const AUTH_KEY = "amigurumiland_session";
-function authDB() {
-  const db = loadDB();
-  if (!db) return null;
-  ["USUARIO", "DIRECCION", "PEDIDO", "DETALLE_PEDIDO", "PAGO", "ENVIO", "FACTURA", "RESENA", "COTIZACION"].forEach(k => { if (!Array.isArray(db[k])) db[k] = []; });
-  return db;
-}
+let authenticatedUser = null;
+let authReady = false;
+
 function currentUser() {
-  try {
-    const id = sessionStorage.getItem(AUTH_KEY);
-    if (!id) return null;
-    const db = authDB();
-    return db?.USUARIO.find(u => u.id === id) || null;
-  } catch { return null; }
+  if (!authenticatedUser) return null;
+
+  return {
+    id: authenticatedUser.id,
+    nombre: authenticatedUser.user_metadata?.full_name || "",
+    email: authenticatedUser.email || ""
+  };
 }
+
 function requireLogin() {
-  const user = currentUser();
-  if (!user) {
-    const next = encodeURIComponent(location.pathname.split("/").pop() + location.search);
+  if (!authReady) {
+    showStatus("Verificando tu sesión. Inténtalo nuevamente en unos segundos.");
+    return false;
+  }
+
+  if (!currentUser()) {
+    const next = encodeURIComponent(
+      location.pathname.split("/").pop() + location.search
+    );
     location.replace(`login.html?next=${next}`);
     return false;
   }
+
   return true;
 }
-async function passwordDigest(password) {
-  const bytes = new TextEncoder().encode(password);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
-}
+
 function safeNext() {
   const next = new URLSearchParams(location.search).get("next") || "index.html";
-  return /^[a-z0-9-]+\.html(?:\?.*)?$/i.test(next) && !/^(login|registro)\.html/i.test(next) ? next : "index.html";
+
+  return /^[a-z0-9-]+\.html(?:\?.*)?$/i.test(next) &&
+    !/^(login|registro)\.html/i.test(next)
+    ? next
+    : "index.html";
 }
-function logout() {
-  sessionStorage.removeItem(AUTH_KEY);
-  sessionStorage.removeItem(CHECKOUT_KEY);
-  location.href = "index.html";
-}
+
 function updateAccountNav() {
   const link = document.getElementById("accountNav");
   if (!link) return;
+
   const user = currentUser();
   link.href = user ? "cuenta.html" : "login.html";
   link.textContent = user ? "Mi cuenta" : "Iniciar sesión";
 }
+
+async function logout() {
+  if (typeof supabaseClient === "undefined") {
+    showStatus("No está disponible la conexión de autenticación.");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    showStatus("No se pudo cerrar la sesión. Inténtalo nuevamente.");
+    console.error("Error al cerrar sesión:", error.message);
+    return;
+  }
+
+  authenticatedUser = null;
+  sessionStorage.removeItem(AUTH_KEY);
+  sessionStorage.removeItem(CHECKOUT_KEY);
+  location.href = "index.html";
+}
+
 async function initRegister() {
   const form = document.getElementById("registerForm");
   if (!form) return;
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+
     const name = document.getElementById("registerName").value.trim();
     const email = document.getElementById("registerEmail").value.trim().toLowerCase();
     const password = document.getElementById("registerPassword").value;
     const confirm = document.getElementById("registerPassword2").value;
     const feedback = document.getElementById("registerError");
+    const button = form.querySelector('[type="submit"]');
+
     feedback.textContent = "";
-    if (!isValidName(name)) { feedback.textContent = "Ingresa un nombre válido."; return; }
-    if (!isValidEmail(email)) { feedback.textContent = "Ingresa un correo electrónico válido."; return; }
-    if (password.length < 8) { feedback.textContent = "La contraseña debe tener al menos 8 caracteres."; return; }
-    if (password !== confirm) { feedback.textContent = "Las contraseñas no coinciden."; return; }
-    const db = authDB();
-    if (!db) { feedback.textContent = "No se pudo acceder al almacenamiento local."; return; }
-    if (db.USUARIO.some(u => String(u.email).toLowerCase() === email)) { feedback.textContent = "Ya existe una cuenta con ese correo. Inicia sesión."; return; }
+
+    if (!isValidName(name)) {
+      feedback.textContent = "Ingresa un nombre válido.";
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      feedback.textContent = "Ingresa un correo electrónico válido.";
+      return;
+    }
+
+    if (password.length < 8) {
+      feedback.textContent = "La contraseña debe tener al menos 8 caracteres.";
+      return;
+    }
+
+    if (password !== confirm) {
+      feedback.textContent = "Las contraseñas no coinciden.";
+      return;
+    }
+
+    if (typeof supabaseClient === "undefined") {
+      feedback.textContent = "No se pudo conectar con el servicio de cuentas.";
+      return;
+    }
+
+    if (button) button.disabled = true;
+
     try {
-      const id = "USR-" + Date.now().toString(36).toUpperCase();
-      db.USUARIO.push({ id, nombre: name, email, password_hash: await passwordDigest(password), fecha_registro: new Date().toISOString(), estado: "activo" });
-      if (!saveDB(db)) { feedback.textContent = "No se pudo guardar la cuenta en este navegador."; return; }
-      sessionStorage.setItem(AUTH_KEY, id);
-      location.href = safeNext();
-    } catch { feedback.textContent = "No se pudo completar el registro en este navegador."; }
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name }
+        }
+      });
+
+      if (error) {
+        console.error("Error de registro:", error.message);
+        feedback.textContent =
+          error.message.includes("already registered")
+            ? "No se pudo crear la cuenta con esos datos. Intenta iniciar sesión."
+            : "No se pudo crear la cuenta. Verifica los datos e inténtalo nuevamente.";
+        return;
+      }
+
+      if (data.session && data.user) {
+        authenticatedUser = data.user;
+        authReady = true;
+        updateAccountNav();
+        location.href = safeNext();
+        return;
+      }
+
+      feedback.textContent =
+        "Tu registro fue recibido. Revisa tu correo para confirmar la cuenta y después inicia sesión.";
+    } catch (error) {
+      console.error("Error inesperado en el registro:", error);
+      feedback.textContent = "Ocurrió un error de conexión. Inténtalo nuevamente.";
+    } finally {
+      if (button) button.disabled = false;
+    }
   });
 }
+
 function initLogin() {
   const form = document.getElementById("loginForm");
   if (!form) return;
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+
     const email = document.getElementById("loginEmail").value.trim().toLowerCase();
     const password = document.getElementById("loginPassword").value;
     const feedback = document.getElementById("loginError");
+    const button = form.querySelector('[type="submit"]');
+
     feedback.textContent = "";
-    const db = authDB();
-    if (!db) { feedback.textContent = "No se pudo acceder al almacenamiento local."; return; }
-    const user = db.USUARIO.find(u => String(u.email).toLowerCase() === email);
-    if (!user) { feedback.textContent = "Correo o contraseña incorrectos."; return; }
+
+    if (!isValidEmail(email) || !password) {
+      feedback.textContent = "Ingresa un correo y una contraseña válidos.";
+      return;
+    }
+
+    if (typeof supabaseClient === "undefined") {
+      feedback.textContent = "No se pudo conectar con el servicio de cuentas.";
+      return;
+    }
+
+    if (button) button.disabled = true;
+
     try {
-      const hash = await passwordDigest(password);
-      if (!user.password_hash || user.password_hash !== hash) { feedback.textContent = "Correo o contraseña incorrectos. Si tu cuenta fue creada antes de esta actualización, regístrate de nuevo."; return; }
-      sessionStorage.setItem(AUTH_KEY, user.id);
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error || !data.user) {
+        feedback.textContent = "Correo o contraseña incorrectos. Verifica también si debes confirmar tu correo.";
+        return;
+      }
+
+      authenticatedUser = data.user;
+      authReady = true;
+      updateAccountNav();
       location.href = safeNext();
-    } catch { feedback.textContent = "No se pudo verificar la contraseña en este navegador."; }
+    } catch (error) {
+      console.error("Error inesperado al iniciar sesión:", error);
+      feedback.textContent = "No se pudo iniciar sesión. Comprueba tu conexión e inténtalo de nuevo.";
+    } finally {
+      if (button) button.disabled = false;
+    }
   });
 }
+
 function initAccount() {
   const form = document.getElementById("accountForm");
-  if (!form || !requireLogin()) return;
-  let user = currentUser();
-  document.getElementById("accountName").value = user.nombre || "";
-  document.getElementById("accountEmail").value = user.email || "";
-  form.addEventListener("submit", e => {
-    e.preventDefault();
-    const name = document.getElementById("accountName").value.trim();
-    const email = document.getElementById("accountEmail").value.trim().toLowerCase();
-    const feedback = document.getElementById("accountFeedback");
+  if (!form) return;
+
+  const user = currentUser();
+  if (!user) return;
+
+  const nameField = document.getElementById("accountName");
+  const emailField = document.getElementById("accountEmail");
+  const feedback = document.getElementById("accountFeedback");
+
+  if (nameField) nameField.value = user.nombre;
+  if (emailField) emailField.value = user.email;
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const name = nameField.value.trim();
+    const email = emailField.value.trim().toLowerCase();
+
     feedback.textContent = "";
-    if (!isValidName(name)) { feedback.textContent = "Ingresa un nombre válido."; return; }
-    if (!isValidEmail(email)) { feedback.textContent = "Ingresa un correo válido."; return; }
-    const db = authDB(); user = db?.USUARIO.find(u => u.id === user.id);
-    if (!db || !user) { feedback.textContent = "No se pudo cargar tu cuenta."; return; }
-    if (db.USUARIO.some(u => u.id !== user.id && String(u.email).toLowerCase() === email)) { feedback.textContent = "Ese correo ya está asociado a otra cuenta."; return; }
-    user.nombre = name; user.email = email; user.actualizado_en = new Date().toISOString();
-    if (!saveDB(db)) { feedback.textContent = "No se pudieron guardar los cambios."; return; }
-    feedback.textContent = "Tus datos se actualizaron correctamente.";
+
+    if (!isValidName(name)) {
+      feedback.textContent = "Ingresa un nombre válido.";
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      feedback.textContent = "Ingresa un correo válido.";
+      return;
+    }
+
+    try {
+      const { data, error } = await supabaseClient.auth.updateUser({
+        email,
+        data: { full_name: name }
+      });
+
+      if (error) {
+        console.error("Error actualizando la cuenta:", error.message);
+        feedback.textContent = "No se pudieron actualizar los datos.";
+        return;
+      }
+
+      if (data.user) authenticatedUser = data.user;
+
+      feedback.textContent = email !== user.email
+        ? "Nombre actualizado. Revisa tu correo por si Supabase solicita confirmar la nueva dirección."
+        : "Tus datos se actualizaron correctamente.";
+
+      updateAccountNav();
+    } catch (error) {
+      console.error("Error inesperado actualizando la cuenta:", error);
+      feedback.textContent = "Ocurrió un error al actualizar tus datos.";
+    }
   });
-  document.getElementById("changePasswordButton").addEventListener("click", async () => {
-    const current = document.getElementById("currentPassword").value;
+
+  document.getElementById("changePasswordButton")?.addEventListener("click", async () => {
     const next = document.getElementById("newPassword").value;
     const confirm = document.getElementById("newPassword2").value;
-    const feedback = document.getElementById("passwordFeedback");
-    feedback.textContent = "";
-    const db = authDB(); user = db?.USUARIO.find(u => u.id === user.id);
-    if (!user || !current || !next || !confirm) { feedback.textContent = "Completa los tres campos de contraseña."; return; }
-    if (await passwordDigest(current) !== user.password_hash) { feedback.textContent = "La contraseña actual no es correcta."; return; }
-    if (next.length < 8) { feedback.textContent = "La nueva contraseña debe tener al menos 8 caracteres."; return; }
-    if (next !== confirm) { feedback.textContent = "Las nuevas contraseñas no coinciden."; return; }
-    user.password_hash = await passwordDigest(next); user.actualizado_en = new Date().toISOString();
-    if (!saveDB(db)) { feedback.textContent = "No se pudo actualizar la contraseña."; return; }
-    ["currentPassword", "newPassword", "newPassword2"].forEach(id => document.getElementById(id).value = "");
-    feedback.textContent = "Contraseña actualizada.";
+    const current = document.getElementById("currentPassword").value;
+    const passwordFeedback = document.getElementById("passwordFeedback");
+
+    passwordFeedback.textContent = "";
+
+    if (!current || !next || !confirm) {
+      passwordFeedback.textContent = "Completa los tres campos de contraseña.";
+      return;
+    }
+
+    if (next.length < 8) {
+      passwordFeedback.textContent = "La nueva contraseña debe tener al menos 8 caracteres.";
+      return;
+    }
+
+    if (next !== confirm) {
+      passwordFeedback.textContent = "Las nuevas contraseñas no coinciden.";
+      return;
+    }
+
+    try {
+      // Reautentica al usuario antes de permitir el cambio de contraseña.
+      const { error: verifyError } = await supabaseClient.auth.signInWithPassword({
+        email: currentUser().email,
+        password: current
+      });
+
+      if (verifyError) {
+        passwordFeedback.textContent = "La contraseña actual no es correcta.";
+        return;
+      }
+
+      const { error } = await supabaseClient.auth.updateUser({
+        password: next
+      });
+
+      if (error) {
+        console.error("Error cambiando contraseña:", error.message);
+        passwordFeedback.textContent = "No se pudo actualizar la contraseña.";
+        return;
+      }
+
+      ["currentPassword", "newPassword", "newPassword2"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+
+      passwordFeedback.textContent = "Contraseña actualizada correctamente.";
+    } catch (error) {
+      console.error("Error inesperado cambiando contraseña:", error);
+      passwordFeedback.textContent = "Ocurrió un error al actualizar la contraseña.";
+    }
   });
 }
+
 function initMyOrders() {
   const box = document.getElementById("myOrders");
-  if (!box || !requireLogin()) return;
-  const user = currentUser(), db = authDB();
-  const orders = (db?.PEDIDO || []).filter(o => o.usuario_id === user.id).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  if (!box) return;
+
+  const user = currentUser();
+  if (!user) return;
+
+  const db = authDB();
+  const orders = (db?.PEDIDO || [])
+    .filter(order => order.usuario_id === user.id)
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
   if (!orders.length) {
     box.innerHTML = '<div class="lookup-card"><h2>Aún no tienes pedidos</h2><p class="muted">Cuando realices una compra, aparecerá aquí.</p><a class="btn dark" href="productos.html">Explorar productos</a></div>';
     return;
   }
+
   box.innerHTML = orders.map(order => {
-    const details = db.DETALLE_PEDIDO.filter(d => d.pedido_id === order.id);
-    const payment = db.PAGO.find(p => p.pedido_id === order.id);
-    const items = details.map(d => {
-      const p = products.find(x => x.id === d.producto_id);
-      return `<li>${escapeHtml(p?.name || "Producto")} · ${escapeHtml(d.tamano || "")} · ${d.cantidad} unidad(es)</li>`;
+    const details = (db.DETALLE_PEDIDO || []).filter(detail => detail.pedido_id === order.id);
+    const payment = (db.PAGO || []).find(entry => entry.pedido_id === order.id);
+    const items = details.map(detail => {
+      const product = products.find(item => item.id === detail.producto_id);
+      return `<li>${escapeHtml(product?.name || "Producto")} · ${escapeHtml(detail.tamano || "")} · ${detail.cantidad} unidad(es)</li>`;
     }).join("");
+
     return `<article class="order-card"><div class="order-card-header"><div><b>Pedido ${escapeHtml(order.id)}</b><time>${new Date(order.fecha).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" })}</time></div><span class="order-status">${escapeHtml(order.estado || "Registrado")}</span></div><ul class="order-items">${items}</ul><div class="order-card-footer"><span>Retiro: ${escapeHtml(order.punto_retiro || "Por coordinar")}<br><span class="muted">Pago: ${payment?.estado === "approved" ? "Aprobado" : "Pendiente de verificación"}</span></span><b>${money(order.total)}</b></div></article>`;
   }).join("");
 }
-function saveCheckoutData() {
-  if (!requireLogin()) return;
-  if (!cart.length) { location.href = "carrito.html"; return; }
-  const user = currentUser();
-  const name = document.getElementById("name"), email = document.getElementById("email");
-  const invoiceName = document.getElementById("invoiceName"), idType = document.getElementById("invoiceIdType"), invoiceId = document.getElementById("invoiceId"), phone = document.getElementById("invoicePhone"), address = document.getElementById("invoiceAddress"), err = document.getElementById("checkoutDataError");
-  const fields = [name, email, invoiceName, invoiceId, phone, address]; err.textContent = ""; fields.forEach(clearFieldError);
-  name.value = user.nombre || ""; email.value = user.email || "";
-  if (!isValidName(name.value)) { setFieldError(name, "Actualiza tu nombre desde Mi cuenta."); name.focus(); return; }
-  if (!isValidEmail(email.value.trim())) { setFieldError(email, "Actualiza tu correo desde Mi cuenta."); email.focus(); return; }
-  if (!isValidName(invoiceName.value)) { setFieldError(invoiceName, "Ingresa el nombre o razón social de la factura."); invoiceName.focus(); return; }
-  if (!isValidEcuadorianTaxId(invoiceId.value.trim(), idType.value)) { setFieldError(invoiceId, idType.value === "ruc" ? "Ingresa un RUC ecuatoriano válido de 13 dígitos." : "Ingresa una cédula ecuatoriana válida de 10 dígitos."); invoiceId.focus(); return; }
-  if (!/^[0-9+()\s-]{7,13}$/.test(phone.value.trim())) { setFieldError(phone, "Ingresa un teléfono válido."); phone.focus(); return; }
-  if (!address.value.trim() || address.value.trim().length > 160) { setFieldError(address, "Ingresa una dirección de facturación válida."); address.focus(); return; }
-  const pickup = document.querySelector("[name=pickup]:checked")?.value;
-  if (!["Centro Norte", "Centro Histórico", "Cumbayá"].includes(pickup)) { err.textContent = "Selecciona un punto de retiro."; return; }
-  const data = { userId: user.id, name: user.nombre, email: user.email, pickup, invoice: { name: invoiceName.value.trim(), idType: idType.value, idNumber: invoiceId.value.trim(), phone: phone.value.trim(), address: address.value.trim() } };
-  try { sessionStorage.setItem(CHECKOUT_KEY, JSON.stringify(data)); location.href = "checkout-pago.html"; }
-  catch { err.textContent = "No fue posible guardar los datos de compra en este navegador."; }
-}
-function processPayment() {
-  if (!requireLogin()) return;
-  const user = currentUser(), data = getCheckout(), err = document.getElementById("paymentError");
-  if (!data || !cart.length || data.userId !== user.id) { location.href = "checkout-datos.html"; return; }
-  const payment = validatePayment(); if (!payment) return;
-  const db = authDB(); if (!db) { err.textContent = "No fue posible registrar la simulación."; return; }
-  const now = new Date(), stamp = Date.now().toString(), orderId = "AM-" + stamp.slice(-6);
-  const method = document.querySelector("[name=payment]:checked")?.value || "Tarjeta";
-  const userId = user.id;
-  db.DIRECCION.push({ id: "DIR-" + orderId, usuario_id: userId, punto_retiro: data.pickup, direccion_facturacion: data.invoice.address, telefono: data.invoice.phone });
-  db.PEDIDO.push({ id: orderId, usuario_id: userId, fecha: now.toISOString(), estado: payment.status === "approved" ? "Confirmado" : "Pendiente de pago", total: totalCart(), punto_retiro: data.pickup, metodo_pago: method });
-  db.FACTURA.push({ id: "FAC-" + stamp.slice(-9), pedido_id: orderId, nombre_razon_social: data.invoice.name, tipo_identificacion: data.invoice.idType, identificacion: data.invoice.idNumber, telefono: data.invoice.phone, direccion: data.invoice.address, email: user.email, total: totalCart(), estado: "Registrada", fecha: now.toISOString() });
-  const items = cart.map((x, i) => {
-    const p = products.find(p => p.id === x.id), unit = p.price + (Number(x.extra) || 0);
-    db.DETALLE_PEDIDO.push({ id: `DET-${stamp.slice(-6)}-${i + 1}`, pedido_id: orderId, producto_id: p.id, cantidad: x.qty, color: x.color, tamano: x.size, precio_unitario: unit });
-    return { name: p.name, customization: customization(x), quantity: x.qty, unitPrice: unit, total: unit * x.qty };
-  });
-  db.PAGO.push({ id: "PAY-" + stamp.slice(-6), pedido_id: orderId, metodo: method, estado: payment.status, referencia: payment.reference || "SIMULACION", fecha: now.toISOString() });
-  db.ENVIO.push({ id: "ENV-" + orderId, pedido_id: orderId, punto_retiro: data.pickup, estado: "Pendiente", fecha_disponible: new Date(now.getTime() + 7 * 86400000).toISOString() });
-  if (!saveDB(db)) { err.textContent = "No se pudo registrar el pedido."; return; }
-  const order = { id: orderId, paymentStatus: payment.status, paymentMethod: method, total: totalCart(), pickup: data.pickup, customerName: user.nombre, email: user.email, invoice: data.invoice, items };
-  sessionStorage.setItem("LAST_ORDER", JSON.stringify(order));
-  sessionStorage.removeItem(CHECKOUT_KEY); cart = []; saveCart(); location.href = "confirmacion.html";
-}
-document.addEventListener("DOMContentLoaded", () => {
-  updateAccountNav();
-  initRegister(); initLogin(); initAccount(); initMyOrders();
-  const file = location.pathname.split("/").pop();
-  if (["checkout-datos.html", "checkout-pago.html", "confirmacion.html", "pedidos.html", "cuenta.html", "cotizacion.html"].includes(file) && !requireLogin()) return;
-  if (file === "checkout-datos.html") {
-    const u = currentUser();
-    const n = document.getElementById("name"), e = document.getElementById("email");
-    if (u && n && e) { n.value = u.nombre || ""; e.value = u.email || ""; n.readOnly = true; e.readOnly = true; const inv = document.getElementById("invoiceName"); if (inv && !inv.value) inv.value = u.nombre || ""; }
+
+/* Inicializa las funciones de cuenta solo después de recuperar la sesión. */
+document.addEventListener("DOMContentLoaded", async () => {
+  if (typeof supabaseClient === "undefined") {
+    authReady = true;
+    updateAccountNav();
+    initRegister();
+    initLogin();
+    console.error("Supabase no está disponible. Revisa el orden de los scripts.");
+    return;
   }
-  if (file === "cotizacion.html") {
-    const u = currentUser();
-    const n = document.getElementById("quoteName"), e = document.getElementById("quoteEmail");
-    if (u && n && e) { n.value = u.nombre || ""; e.value = u.email || ""; n.readOnly = true; e.readOnly = true; }
+
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+
+    if (error) {
+      console.error("No se pudo recuperar la sesión:", error.message);
+    }
+
+    authenticatedUser = data?.session?.user || null;
+  } catch (error) {
+    console.error("Error recuperando la sesión:", error);
+    authenticatedUser = null;
+  }
+
+  authReady = true;
+  updateAccountNav();
+
+  initRegister();
+  initLogin();
+  initAccount();
+  initMyOrders();
+
+  const file = location.pathname.split("/").pop();
+
+  if (["checkout-datos.html", "checkout-pago.html", "confirmacion.html", "pedidos.html", "cuenta.html", "cotizacion.html"].includes(file) && !requireLogin()) {
+    return;
+  }
+
+  const user = currentUser();
+
+  if (file === "checkout-datos.html" && user) {
+    const name = document.getElementById("name");
+    const email = document.getElementById("email");
+    const invoiceName = document.getElementById("invoiceName");
+
+    if (name && email) {
+      name.value = user.nombre;
+      email.value = user.email;
+      name.readOnly = true;
+      email.readOnly = true;
+
+      if (invoiceName && !invoiceName.value) {
+        invoiceName.value = user.nombre;
+      }
+    }
+  }
+
+  if (file === "cotizacion.html" && user) {
+    const name = document.getElementById("quoteName");
+    const email = document.getElementById("quoteEmail");
+
+    if (name && email) {
+      name.value = user.nombre;
+      email.value = user.email;
+      name.readOnly = true;
+      email.readOnly = true;
+    }
   }
 });
