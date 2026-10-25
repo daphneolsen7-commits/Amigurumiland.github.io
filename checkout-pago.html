@@ -48,21 +48,25 @@
                                 onchange="updatePaymentFields()"><span><b>PayPal</b></span></label>
                     </div>
                     <div id="cardPaymentFields" class="payment-fields"><label>Nombre del titular<input class="field"
-                                id="cardholderName" autocomplete="cc-name" placeholder="Nombre como aparece en la tarjeta"></label><label>Número de
+                                id="cardholderName" autocomplete="cc-name"
+                                placeholder="Nombre como aparece en la tarjeta"></label><label>Número de
                             tarjeta<input class="field" id="cardNumber" inputmode="numeric" maxlength="19"
                                 autocomplete="cc-number" placeholder="1234 5678 9012 3456"></label>
-                        <div class="two-fields"><label>Vencimiento<input class="field" id="cardExpiry" autocomplete="cc-exp"
-                                    inputmode="numeric" maxlength="5" placeholder="MM/AA"></label><label>CVV<input
-                                    class="field" id="cardCvv" inputmode="numeric" maxlength="4" type="password"
-                                    autocomplete="cc-csc" placeholder="123"></label></div>
+                        <div class="two-fields"><label>Vencimiento<input class="field" id="cardExpiry"
+                                    autocomplete="cc-exp" inputmode="numeric" maxlength="5"
+                                    placeholder="MM/AA"></label><label>CVV<input class="field" id="cardCvv"
+                                    inputmode="numeric" maxlength="4" type="password" autocomplete="cc-csc"
+                                    placeholder="123"></label></div>
                     </div>
                     <div id="transferPaymentFields" class="payment-fields" hidden>
-                        <p>Solicita los datos bancarios por WhatsApp y registra aquí la referencia de tu transferencia.</p>
-                        <label>Referencia de transferencia<input class="field"
-                                id="transferReference" placeholder="TRANSF-123456" maxlength="20"></label>
+                        <p>Solicita los datos bancarios por WhatsApp y registra aquí la referencia de tu transferencia.
+                        </p>
+                        <label>Referencia de transferencia<input class="field" id="transferReference"
+                                placeholder="TRANSF-123456" maxlength="20"></label>
                     </div>
-                    <div id="paypalPaymentFields" class="payment-fields" hidden><label>Correo de PayPal<input class="field"
-                                id="paypalEmail" type="email" autocomplete="email" placeholder="correo@paypal.com"></label>
+                    <div id="paypalPaymentFields" class="payment-fields" hidden><label>Correo de PayPal<input
+                                class="field" id="paypalEmail" type="email" autocomplete="email"
+                                placeholder="correo@paypal.com"></label>
                     </div>
                     <button class="btn dark full" type="button" onclick="processPayment()">Confirmar pago</button>
                 </div>
@@ -79,7 +83,8 @@
                 <h3>♡ Amigurumiland</h3>
                 <p>Muñecos tejidos a mano y personalizables.</p>
             </div>
-            <div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a href="pedidos.html">Mis pedidos</a><a href="faq.html">FAQ</a></div>
+            <div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a
+                    href="pedidos.html">Mis pedidos</a><a href="faq.html">FAQ</a></div>
             <div><b>Contacto</b>
                 <p><a id="waLinkFooter" target="_blank" rel="noopener">WhatsApp</a></p>
                 <p>daphneolsen7@gmail.com</p>
@@ -90,6 +95,8 @@
         </div>
     </footer>
     <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
 </body>
 
 </html>

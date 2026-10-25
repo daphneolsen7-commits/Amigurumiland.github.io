@@ -1,9 +1,72 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Amigurumiland | Crear cuenta</title><link rel="icon" type="image/png" href="assets/Logo.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css"></head><body>
-    <a class="skip-link" href="#main-content">Saltar al contenido principal</a><header class="nav">
-<a class="brand" href="index.html"><img src="assets/Logo.png" alt=""><span>Amigurumiland</span> ♡</a>
-<button class="icon-btn menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="site-nav" onclick="toggleNav()">☰</button>
-<nav class="site-nav" id="site-nav" aria-label="Navegación principal">
-<a href="index.html">Inicio</a><a href="productos.html">Productos</a><a href="faq.html">FAQ</a><a href="contacto.html">Contacto</a><a href="login.html" id="accountNav">Iniciar sesión</a>
-</nav>
-<a class="icon-btn cart-link" href="carrito.html" aria-label="Abrir carrito"><span aria-hidden="true">🛒</span><span class="cart-count" id="cartCount">0</span></a>
-</header><div id="statusMessage" class="toast" role="status" aria-live="polite"></div><main id="main-content" class="container"><section class="section checkout-page"><div class="form-card auth-card"><p class="eyebrow">ÚNETE A LA FAMILIA</p><h1>Crear cuenta</h1><p class="muted">Regístrate para guardar tus datos y consultar tus pedidos.</p><form id="registerForm" class="auth-form"><label>Nombre completo<input class="field" id="registerName" autocomplete="name" maxlength="80" required></label><label>Correo electrónico<input class="field" id="registerEmail" type="email" autocomplete="email" required></label><label>Contraseña<input class="field" id="registerPassword" type="password" autocomplete="new-password" minlength="8" required><small class="muted">Mínimo 8 caracteres.</small></label><label>Confirmar contraseña<input class="field" id="registerPassword2" type="password" autocomplete="new-password" minlength="8" required></label><p id="registerError" class="form-error" role="alert"></p><button class="btn dark full" type="submit">Crear cuenta</button></form><p>¿Ya tienes cuenta? <a class="text-link inline-link" href="login.html">Inicia sesión</a></p></div></section></main><footer><div class="footer"><div><h3>♡ Amigurumiland</h3><p>Muñecos tejidos a mano y personalizables.</p></div><div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a href="faq.html">FAQ</a></div><div><b>Mi cuenta</b><a href="cuenta.html">Mis datos</a><a href="pedidos.html">Mis pedidos</a></div><div><b>Contacto</b><p><a id="waLinkFooter" target="_blank" rel="noopener">WhatsApp</a></p><p>Atención personalizada.</p></div></div></footer><script src="script.js"></script></body></html>
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Amigurumiland | Crear cuenta</title>
+    <link rel="icon" type="image/png" href="assets/Logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+    <header class="nav">
+        <a class="brand" href="index.html"><img src="assets/Logo.png" alt=""><span>Amigurumiland</span> ♡</a>
+        <button class="icon-btn menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false"
+            aria-controls="site-nav" onclick="toggleNav()">☰</button>
+        <nav class="site-nav" id="site-nav" aria-label="Navegación principal">
+            <a href="index.html">Inicio</a><a href="productos.html">Productos</a><a href="faq.html">FAQ</a><a
+                href="contacto.html">Contacto</a><a href="login.html" id="accountNav">Iniciar sesión</a>
+        </nav>
+        <a class="icon-btn cart-link" href="carrito.html" aria-label="Abrir carrito"><span
+                aria-hidden="true">🛒</span><span class="cart-count" id="cartCount">0</span></a>
+    </header>
+    <div id="statusMessage" class="toast" role="status" aria-live="polite"></div>
+    <main id="main-content" class="container">
+        <section class="section checkout-page">
+            <div class="form-card auth-card">
+                <p class="eyebrow">ÚNETE A LA FAMILIA</p>
+                <h1>Crear cuenta</h1>
+                <p class="muted">Regístrate para guardar tus datos y consultar tus pedidos.</p>
+                <form id="registerForm" class="auth-form"><label>Nombre completo<input class="field" id="registerName"
+                            autocomplete="name" maxlength="80" required></label><label>Correo electrónico<input
+                            class="field" id="registerEmail" type="email" autocomplete="email"
+                            required></label><label>Contraseña<input class="field" id="registerPassword" type="password"
+                            autocomplete="new-password" minlength="8" required><small class="muted">Mínimo 8
+                            caracteres.</small></label><label>Confirmar contraseña<input class="field"
+                            id="registerPassword2" type="password" autocomplete="new-password" minlength="8"
+                            required></label>
+                    <p id="registerError" class="form-error" role="alert"></p><button class="btn dark full"
+                        type="submit">Crear cuenta</button>
+                </form>
+                <p>¿Ya tienes cuenta? <a class="text-link inline-link" href="login.html">Inicia sesión</a></p>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <div class="footer">
+            <div>
+                <h3>♡ Amigurumiland</h3>
+                <p>Muñecos tejidos a mano y personalizables.</p>
+            </div>
+            <div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a
+                    href="faq.html">FAQ</a></div>
+            <div><b>Mi cuenta</b><a href="cuenta.html">Mis datos</a><a href="pedidos.html">Mis pedidos</a></div>
+            <div><b>Contacto</b>
+                <p><a id="waLinkFooter" target="_blank" rel="noopener">WhatsApp</a></p>
+                <p>Atención personalizada.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+</body>
+
+</html>

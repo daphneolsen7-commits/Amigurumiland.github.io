@@ -44,21 +44,21 @@
                             placeholder="Ej. Ana Pérez"></label>
                     <label>Correo electrónico<input class="field" id="email" type="email" autocomplete="email" required
                             placeholder="ana@ejemplo.com"></label>
-                        <h2>Datos para la factura</h2>
-                        <label>Nombre o razón social<input class="field" id="invoiceName" autocomplete="name"
-                            maxlength="80" required placeholder="Nombre completo"></label>
-                        <div class="two-fields">
+                    <h2>Datos para la factura</h2>
+                    <label>Nombre o razón social<input class="field" id="invoiceName" autocomplete="name" maxlength="80"
+                            required placeholder="Nombre completo"></label>
+                    <div class="two-fields">
                         <label>Tipo de identificación<select class="field" id="invoiceIdType" required>
-                            <option value="cedula">Cédula</option>
-                            <option value="ruc">RUC</option>
+                                <option value="cedula">Cédula</option>
+                                <option value="ruc">RUC</option>
                             </select></label>
                         <label id="invoiceIdLabel">Número de cédula<input class="field" id="invoiceId"
-                            inputmode="numeric" maxlength="10" autocomplete="off" required
-                            placeholder="10 dígitos"></label>
-                        </div>
-                        <label>Teléfono<input class="field" id="invoicePhone" type="tel" autocomplete="tel"
-                            maxlength="13" required placeholder="09 1234 5678"></label>
-                        <label>Dirección de facturación<textarea class="field" id="invoiceAddress"
+                                inputmode="numeric" maxlength="10" autocomplete="off" required
+                                placeholder="10 dígitos"></label>
+                    </div>
+                    <label>Teléfono<input class="field" id="invoicePhone" type="tel" autocomplete="tel" maxlength="13"
+                            required placeholder="09 1234 5678"></label>
+                    <label>Dirección de facturación<textarea class="field" id="invoiceAddress"
                             autocomplete="street-address" maxlength="160" rows="2" required
                             placeholder="Calle principal, número y sector"></textarea></label>
                     <h2>Punto de retiro</h2>
@@ -84,7 +84,8 @@
                 <h3>♡ Amigurumiland</h3>
                 <p>Muñecos tejidos a mano y personalizables.</p>
             </div>
-            <div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a href="pedidos.html">Mis pedidos</a><a href="faq.html">FAQ</a></div>
+            <div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a
+                    href="pedidos.html">Mis pedidos</a><a href="faq.html">FAQ</a></div>
             <div><b>Contacto</b>
                 <p><a id="waLinkFooter" target="_blank" rel="noopener">WhatsApp</a></p>
                 <p>daphneolsen7@gmail.com</p>
@@ -95,6 +96,8 @@
         </div>
     </footer>
     <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
 </body>
 
 </html>
