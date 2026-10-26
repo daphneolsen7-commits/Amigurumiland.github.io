@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Amigurumiland | Recuperar contraseña</title>
+  <link rel="icon" type="image/png" href="assets/Logo.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+  <header class="nav">
+    <a class="brand" href="index.html"><img src="assets/Logo.png" alt=""><span>Amigurumiland</span> ♡</a>
+    <nav class="site-nav" aria-label="Navegación principal"><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a href="login.html">Iniciar sesión</a></nav>
+  </header>
+  <main id="main-content" class="container">
+    <section class="section checkout-page">
+      <div class="form-card auth-card">
+        <p class="eyebrow">RECUPERA TU ACCESO</p>
+        <h1>¿Olvidaste tu contraseña?</h1>
+        <p class="muted">Escribe el correo de tu cuenta y te enviaremos un enlace seguro para crear una contraseña nueva.</p>
+        <form id="recoveryForm" class="auth-form">
+          <label for="recoveryEmail">Correo electrónico</label>
+          <input class="field" id="recoveryEmail" name="email" type="email" autocomplete="email" maxlength="254" required>
+          <p id="recoveryFeedback" class="form-success" role="status" aria-live="polite"></p>
+          <button class="btn dark full" type="submit">Enviar enlace de recuperación</button>
+        </form>
+        <p><a class="text-link inline-link" href="login.html">Volver a iniciar sesión</a></p>
+      </div>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
