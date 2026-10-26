@@ -205,29 +205,51 @@ function checkoutSummary(target) { const box = document.getElementById(target); 
 function getCheckout() { try { return JSON.parse(sessionStorage.getItem(CHECKOUT_KEY) || "null") } catch { return null } }
 function saveCheckoutData() { if (!cart.length) { location.href = "carrito.html"; return } const name = document.getElementById("name"), email = document.getElementById("email"), err = document.getElementById("checkoutDataError"); err.textContent = ""; clearFieldError(name); clearFieldError(email); if (!isValidName(name.value)) { setFieldError(name, "Ingresa un nombre completo válido (solo letras, espacios, apóstrofes o guiones)."); name.focus(); return } if (!isValidEmail(email.value.trim())) { setFieldError(email, "Ingresa un correo válido."); email.focus(); return } const data = { name: name.value.trim(), email: email.value.trim(), pickup: document.querySelector("[name=pickup]:checked")?.value }; if (!data.pickup) { err.textContent = "Selecciona un punto de retiro."; return } try { sessionStorage.setItem(CHECKOUT_KEY, JSON.stringify(data)); location.href = "checkout-pago.html" } catch { err.textContent = "No fue posible guardar tus datos en este navegador." } }
 function saveCheckoutData() { if (!cart.length) { location.href = "carrito.html"; return } const name = document.getElementById("name"), email = document.getElementById("email"), invoiceName = document.getElementById("invoiceName"), idType = document.getElementById("invoiceIdType"), invoiceId = document.getElementById("invoiceId"), phone = document.getElementById("invoicePhone"), address = document.getElementById("invoiceAddress"), err = document.getElementById("checkoutDataError"), fields = [name, email, invoiceName, invoiceId, phone, address]; err.textContent = ""; fields.forEach(clearFieldError); if (!isValidName(name.value)) { setFieldError(name, "Ingresa un nombre completo válido."); name.focus(); return } if (!isValidEmail(email.value.trim())) { setFieldError(email, "Ingresa un correo válido."); email.focus(); return } if (!isValidName(invoiceName.value)) { setFieldError(invoiceName, "Ingresa el nombre o razón social de la factura."); invoiceName.focus(); return } if (!isValidEcuadorianTaxId(invoiceId.value.trim(), idType.value)) { setFieldError(invoiceId, idType.value === "ruc" ? "Ingresa un RUC ecuatoriano válido de 13 dígitos." : "Ingresa una cédula ecuatoriana válida de 10 dígitos."); invoiceId.focus(); return } if (!/^(?:\+593|0)(?:[2-7]\d{7}|9\d{8})$/.test(phone.value.replace(/[\s()-]/g, ""))) { setFieldError(phone, "Ingresa un teléfono ecuatoriano válido."); phone.focus(); return } if (address.value.trim().length < 8 || address.value.trim().length > 160) { setFieldError(address, "Escribe una dirección de 8 a 160 caracteres."); address.focus(); return } const data = { name: name.value.trim(), email: email.value.trim(), invoice: { name: invoiceName.value.trim(), idType: idType.value, idNumber: invoiceId.value.trim(), phone: phone.value.replace(/[\s()-]/g, ""), address: address.value.trim() }, pickup: document.querySelector("[name=pickup]:checked")?.value }; if (!data.pickup) { err.textContent = "Selecciona un punto de retiro."; return } try { sessionStorage.setItem(CHECKOUT_KEY, JSON.stringify(data)); location.href = "checkout-pago.html" } catch { err.textContent = "No fue posible guardar tus datos de compra." } }
-function isValidCardNumber(v) { const d = v.replace(/\D/g, ""); if (!/^\d{16}$/.test(d)) return false; let sum = 0, double = false; for (let i = d.length - 1; i >= 0; i--) { let n = +d[i]; if (double) n = n * 2 > 9 ? n * 2 - 9 : n * 2; sum += n; double = !double } return sum % 10 === 0 }
-function updatePaymentFields() { const m = document.querySelector("[name=payment]:checked")?.value; document.getElementById("cardPaymentFields")?.toggleAttribute("hidden", m !== "Tarjeta"); document.getElementById("transferPaymentFields")?.toggleAttribute("hidden", m !== "Transferencia bancaria"); document.getElementById("paypalPaymentFields")?.toggleAttribute("hidden", m !== "PayPal"); document.getElementById("paymentError")?.replaceChildren();["cardholderName", "cardNumber", "cardExpiry", "cardCvv"].forEach(id => clearFieldError(document.getElementById(id))) }
+function isValidCardNumber(v) { return /^\d{16}$/.test(String(v).replace(/\D/g, "")); }
+function updatePaymentFields() {
+  const m = document.querySelector("[name=payment]:checked")?.value;
+  document.getElementById("cardPaymentFields")?.toggleAttribute("hidden", m !== "Tarjeta");
+  document.getElementById("transferPaymentFields")?.toggleAttribute("hidden", m !== "Transferencia bancaria");
+  document.getElementById("paypalPaymentFields")?.toggleAttribute("hidden", m !== "PayPal");
+  document.getElementById("paymentError")?.replaceChildren();
+  ["cardholderName", "cardNumber", "cardExpiry", "cardCvv", "transferHolder", "transferReference", "transferDate", "paypalName", "paypalEmail"].forEach(id => clearFieldError(document.getElementById(id)));
+}
 function validatePayment() {
   const method = document.querySelector("[name=payment]:checked")?.value;
   const err = document.getElementById("paymentError");
   err.textContent = "";
-  if (method === "PayPal") return { status: "pending_verification", reference: "DEMO-PAYPAL" };
-  if (method === "Transferencia bancaria") return { status: "pending_verification", reference: "DEMO-TRANSFERENCIA" };
+  const requiredText = (id, message, validator = value => !!value.trim()) => {
+    const field = document.getElementById(id);
+    clearFieldError(field);
+    if (!validator(field.value)) { setFieldError(field, message); field.focus(); return false; }
+    return true;
+  };
+  if (method === "PayPal") {
+    if (!requiredText("paypalName", "Escribe un nombre ficticio para la cuenta." , value => isValidName(value))) return null;
+    if (!requiredText("paypalEmail", "Introduce un correo de demostración válido.", value => { const input = document.createElement("input"); input.type = "email"; input.value = value.trim(); return input.checkValidity(); })) return null;
+    return { status: "pending_verification", reference: "DEMO-PAYPAL" };
+  }
+  if (method === "Transferencia bancaria") {
+    if (!requiredText("transferHolder", "Escribe un nombre ficticio.", value => isValidName(value))) return null;
+    if (!requiredText("transferReference", "Escribe una referencia ficticia.")) return null;
+    if (!requiredText("transferDate", "Selecciona una fecha de prueba.")) return null;
+    return { status: "pending_verification", reference: "DEMO-TRANSFERENCIA" };
+  }
   if (method !== "Tarjeta") { err.textContent = "Selecciona un método de pago válido."; return null; }
   const name = document.getElementById("cardholderName");
   const number = document.getElementById("cardNumber");
   const expiry = document.getElementById("cardExpiry");
   const cvv = document.getElementById("cardCvv");
   [name, number, expiry, cvv].forEach(clearFieldError);
-  if (!isValidName(name.value)) { setFieldError(name, "Escribe el nombre del titular."); name.focus(); return null; }
+  if (!isValidName(name.value)) { setFieldError(name, "Escribe el nombre del titular ficticio."); name.focus(); return null; }
   const digits = number.value.replace(/\D/g, "");
-  if (!isValidCardNumber(digits)) { setFieldError(number, "Introduce una tarjeta de prueba válida de 16 dígitos (sin usar datos reales)."); number.focus(); return null; }
+  if (!isValidCardNumber(digits)) { setFieldError(number, "Introduce exactamente 16 dígitos (se acepta cualquier combinación ficticia)."); number.focus(); return null; }
   if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry.value.trim())) { setFieldError(expiry, "Usa el formato MM/AA."); expiry.focus(); return null; }
   const parts = expiry.value.trim().split("/");
   const month = Number(parts[0]), year = 2000 + Number(parts[1]), now = new Date();
   if (year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth() + 1)) { setFieldError(expiry, "La fecha debe ser futura."); expiry.focus(); return null; }
   if (!/^\d{3,4}$/.test(cvv.value.trim())) { setFieldError(cvv, "Introduce un CVV ficticio de 3 o 4 dígitos."); cvv.focus(); return null; }
-  // Los datos de tarjeta solo se validan en el navegador y nunca se envían ni guardan.
+  // Nunca se envían ni guardan el número, vencimiento o CVV de la tarjeta.
   return { status: "pending_verification", reference: "DEMO-TARJETA" };
 }
 function loadDB() { try { const db = JSON.parse(localStorage.getItem(DB_KEY) || '{"USUARIO":[],"DIRECCION":[],"PEDIDO":[],"DETALLE_PEDIDO":[],"PAGO":[],"ENVIO":[],"FACTURA":[],"RESENA":[],"COTIZACION":[]}'); return db && typeof db === "object" && !Array.isArray(db) ? db : null } catch { return null } }
@@ -402,7 +424,16 @@ async function processPayment() {
     }
   }
 }
-function initPayment() { if (!getCheckout()) return location.href = "checkout-datos.html"; checkoutSummary("paymentSummary") }
+function initPayment() {
+  if (!getCheckout()) return location.href = "checkout-datos.html";
+  checkoutSummary("paymentSummary");
+  const number = document.getElementById("cardNumber");
+  number?.addEventListener("input", () => {
+    const digits = number.value.replace(/\D/g, "").slice(0, 16);
+    number.value = digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+  });
+  updatePaymentFields();
+}
 function initData() { if (!cart.length) return location.href = "carrito.html"; checkoutSummary("checkoutSummary") }
 function initConfirmation() { const o = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null"); if (!o) return; document.getElementById("confirmationText").textContent = `Tu pedido ${o.id} fue registrado correctamente. `; document.getElementById("confirmationCard").innerHTML = `<p><b>Código del pedido</b><br>${escapeHtml(o.id)}</p><p><b>Método</b><br>${escapeHtml(o.paymentMethod)}</p><p><b>Estado del pago</b><br>${o.paymentStatus === "approved" ? "Aprobado" : "Pendiente de verificación"}</p><p><b>Total simulado</b><br>${money(o.total)}</p>` }
 function initConfirmation() { let order; try { order = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null") } catch { order = null } const text = document.getElementById("confirmationText"), card = document.getElementById("confirmationCard"); if (!order) { text.textContent = "No encontramos los datos de esta compra. Consulta tus pedidos para revisar su estado."; card.hidden = true; return } const items = (order.items || []).map(item => `<div class="summary-line"><span>${escapeHtml(item.name)}<small>${escapeHtml(item.customization)} × ${item.quantity}</small></span><b>${money(item.total)}</b></div>`).join(""), invoice = order.invoice || {}; text.textContent = order.paymentStatus === "approved" ? `Gracias, ${order.customerName}. Tu pedido fue confirmado y el pago quedó registrado.` : `Gracias, ${order.customerName}. Recibimos tu pedido; el pago está pendiente de verificación.`; card.innerHTML = `<section class="order-confirmation-block"><h2>Número de pedido</h2><div class="order-code-row"><strong id="orderCodeValue">${escapeHtml(order.id)}</strong><button class="btn light copy-order-button" type="button" onclick="copyOrderCode()" aria-label="Copiar número de pedido">Copiar</button></div><p class="notice">Copia este número para consultar el estado y dar seguimiento a tu pedido.</p></section><section class="order-confirmation-block"><h2>Resumen de compra</h2>${items}<div class="summary-total"><span>Total</span><b>${money(order.total)}</b></div></section><section class="order-confirmation-block"><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}</p><p><b>Estado:</b> ${order.paymentStatus === "approved" ? "Confirmado" : "Pendiente de verificación"}</p><p><b>Retiro:</b> ${escapeHtml(order.pickup)}</p></section><section class="order-confirmation-block"><h2>Datos de facturación</h2><p>${escapeHtml(invoice.name || order.customerName)} · ${invoice.idType === "ruc" ? "RUC" : "Cédula"} ${escapeHtml(invoice.idNumber || "")}</p><p>${escapeHtml(invoice.address || "")}</p><p>${escapeHtml(invoice.phone || "")} · ${escapeHtml(order.email)}</p></section>` }
