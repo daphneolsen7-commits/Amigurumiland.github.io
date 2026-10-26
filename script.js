@@ -401,7 +401,7 @@ async function lookupOrder() {
   const email = emailField.value.trim().toLowerCase();
   const result = document.getElementById("orderLookupResult");
   clearFieldError(codeField); clearFieldError(emailField); result.replaceChildren();
-  if (!/^(?:AMI-[A-F0-9]{10}|AM-\\d{6})$/.test(code)) {
+  if (!/^(?:AMI-[A-F0-9]{10}|AM-\d{6})$/.test(code)) {
     setFieldError(codeField, "Ingresa el código completo de tu pedido, por ejemplo AMI-1A2B3C4D5E."); codeField.focus(); return;
   }
   if (!isValidEmail(email)) { setFieldError(emailField, "Ingresa un correo válido."); emailField.focus(); return; }
