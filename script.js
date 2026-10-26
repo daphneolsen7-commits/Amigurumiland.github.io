@@ -599,31 +599,6 @@ async function submitReview(id) {
 
 function contactUrl(name) { return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola, quiero consultar sobre ${name} en Amigurumiland.`)}` }
 async function submitQuote() { if (!requireLogin()) return; const user = currentUser(); if (!user) return; const name = document.getElementById("quoteName"), email = document.getElementById("quoteEmail"), design = document.getElementById("quoteDesign"), size = document.getElementById("quoteSize"), colors = document.getElementById("quoteColors"), details = document.getElementById("quoteDetails"), input = document.getElementById("quoteImages"), feedback = document.getElementById("quoteFeedback"); name.value = user.nombre || ""; email.value = user.email || ""; feedback.textContent = "";[name, email, design, size, colors].forEach(clearFieldError); if (!isValidName(name.value)) { setFieldError(name, "Ingresa un nombre válido."); name.focus(); return } if (!isValidEmail(email.value.trim())) { setFieldError(email, "Ingresa un correo válido."); email.focus(); return } if (!design.value.trim() || design.value.trim().length > 1000) { setFieldError(design, "Describe tu idea (máximo 1000 caracteres)."); design.focus(); return } if (!["Pequeño (15 cm)", "Mediano (20 cm)", "Grande (30 cm)"].includes(size.value)) { setFieldError(size, "Selecciona un tamaño disponible."); size.focus(); return } if (!colors.value.trim() || colors.value.trim().length > 120) { setFieldError(colors, "Indica los colores (máximo 120 caracteres)."); colors.focus(); return } const images = await prepareReferenceImages(input); if (images === null) { input.focus(); return } const db = loadDB(); if (!db) { feedback.textContent = "No se pudo acceder al almacenamiento local."; return } db.COTIZACION = Array.isArray(db.COTIZACION) ? db.COTIZACION : []; db.COTIZACION.push({ id: `COT-${Date.now().toString().slice(-6)}`, usuario_id: user.id, nombre: user.nombre, email: user.email, diseno: design.value.trim(), tamano: size.value, colores: colors.value.trim(), detalles: details.value.trim(), imagenes: images, fecha: new Date().toISOString() }); if (!saveDB(db)) { feedback.textContent = "No se pudo guardar. Reduce el tamaño o la cantidad de imágenes."; return } document.querySelector("#quoteForm")?.reset(); clearReferencePreviews(document.getElementById("quoteImagePreview")); feedback.textContent = "Solicitud enviada correctamente." }
-function processPayment() {
-  const data = getCheckout(), error = document.getElementById("paymentError");
-  if (!data?.invoice || !cart.length) { location.href = "checkout-datos.html"; return }
-  const payment = validatePayment();
-  if (!payment) return;
-  const db = loadDB();
-  if (!db) { error.textContent = "No fue posible registrar el pago."; return }
-  ["USUARIO", "DIRECCION", "PEDIDO", "DETALLE_PEDIDO", "PAGO", "ENVIO", "FACTURA"].forEach(key => { if (!Array.isArray(db[key])) db[key] = [] });
-  const now = new Date(), stamp = Date.now().toString(), orderId = `AM-${stamp.slice(-6)}`, userId = `USR-${stamp.slice(-6)}`, method = document.querySelector('[name="payment"]:checked').value;
-  db.USUARIO.push({ id: userId, nombre: data.name, email: data.email });
-  db.DIRECCION.push({ id: `DIR-${orderId}`, usuario_id: userId, punto_retiro: data.pickup, direccion_facturacion: data.invoice.address, telefono: data.invoice.phone });
-  db.PEDIDO.push({ id: orderId, usuario_id: userId, fecha: now.toISOString(), estado: payment.status === "approved" ? "Confirmado" : "Pendiente de pago", total: totalCart(), punto_retiro: data.pickup, metodo_pago: method });
-  db.FACTURA.push({ id: `FAC-${stamp.slice(-9)}`, pedido_id: orderId, nombre_razon_social: data.invoice.name, tipo_identificacion: data.invoice.idType, identificacion: data.invoice.idNumber, telefono: data.invoice.phone, direccion: data.invoice.address, email: data.email, total: totalCart(), estado: "Registrada", fecha: now.toISOString() });
-  const items = cart.map((item, index) => {
-    const product = products.find(entry => entry.id === item.id), unitPrice = product.price + (item.extra || 0);
-    db.DETALLE_PEDIDO.push({ id: `DET-${stamp.slice(-6)}-${index + 1}`, pedido_id: orderId, producto_id: product.id, cantidad: item.qty, color: item.color, tamano: item.size, precio_unitario: unitPrice });
-    return { name: product.name, customization: customization(item), quantity: item.qty, unitPrice, total: unitPrice * item.qty };
-  });
-  db.PAGO.push({ id: `PAY-${stamp.slice(-6)}`, pedido_id: orderId, metodo: method, estado: payment.status, referencia: payment.reference || "Pago autorizado", fecha: now.toISOString() });
-  db.ENVIO.push({ id: `ENV-${orderId}`, pedido_id: orderId, punto_retiro: data.pickup, estado: "Pendiente", fecha_disponible: new Date(now.getTime() + 7 * 86400000).toISOString() });
-  if (!saveDB(db)) { error.textContent = "No se pudo registrar el pago. Inténtalo nuevamente."; return }
-  const order = { id: orderId, paymentStatus: payment.status, paymentMethod: method, total: totalCart(), pickup: data.pickup, customerName: data.name, email: data.email, invoice: data.invoice, items };
-  try { sessionStorage.setItem("LAST_ORDER", JSON.stringify(order)); sessionStorage.removeItem(CHECKOUT_KEY) } catch { error.textContent = "No se pudo preparar la confirmación del pedido."; return }
-  cart = []; saveCart(); location.href = "confirmacion.html";
-}
 function initConfirmation() {
   let order;
   try { order = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null") } catch { order = null }
