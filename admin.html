@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administración | Amigurumiland</title>
+  <link rel="icon" type="image/png" href="assets/Logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .admin-grid{display:grid;gap:1rem}.admin-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:1.2rem;overflow-wrap:anywhere}.admin-card h3{margin-top:0}.admin-actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem}.admin-actions select,.admin-actions input,.admin-actions textarea{max-width:100%}.admin-meta{color:var(--muted);font-size:.9rem}.admin-photo{width:90px;height:90px;object-fit:cover;border-radius:10px;margin:.25rem}.admin-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}.admin-tabs button[aria-pressed=true]{outline:2px solid var(--accent)}.admin-hidden{display:none}.admin-error{color:#9c2626}.admin-success{color:#246b45}
+    @media(min-width:850px){.admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+  <header class="nav">
+    <a class="brand" href="index.html"><img src="assets/Logo.png" alt=""><span>Amigurumiland</span> ♡</a>
+    <nav class="site-nav" aria-label="Navegación principal"><a href="index.html">Volver a la tienda</a><a href="cuenta.html">Mi cuenta</a></nav>
+  </header>
+  <main id="main-content" class="container">
+    <section class="section page-heading"><p class="eyebrow">GESTIÓN INTERNA</p><h1>Panel administrativo</h1><p class="muted">Acceso restringido a cuentas autorizadas. Verifica siempre las transferencias en tu banco antes de aprobarlas.</p></section>
+    <p id="adminStatus" role="status" aria-live="polite">Verificando permisos…</p>
+    <section id="adminApp" hidden>
+      <div class="admin-tabs" role="group" aria-label="Secciones administrativas">
+        <button class="btn light" type="button" data-panel="orders" aria-pressed="true">Pedidos y pagos</button>
+        <button class="btn light" type="button" data-panel="quotes" aria-pressed="false">Cotizaciones</button>
+      </div>
+      <section id="panel-orders"><h2>Pedidos y pagos</h2><div id="adminOrders" class="admin-grid"></div></section>
+      <section id="panel-quotes" class="admin-hidden"><h2>Solicitudes de cotización</h2><div id="adminQuotes" class="admin-grid"></div></section>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
