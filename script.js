@@ -328,6 +328,36 @@ const AUTH_KEY = "amigurumiland_session";
 let authenticatedUser = null;
 let authReady = false;
 
+function handleAuthRedirectFeedback() {
+  const params = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const feedback = document.getElementById("loginError");
+
+  const authError = hashParams.get("error_description") || hashParams.get("error");
+  if (authError) {
+    if (feedback) {
+      feedback.textContent = "El enlace de confirmación no es válido o ha caducado. Solicita un correo nuevo y abre el enlace más reciente.";
+    }
+    history.replaceState({}, document.title, window.location.pathname + window.location.search);
+    return;
+  }
+
+  if (params.get("verified") === "1") {
+    const message = document.getElementById("emailVerifiedMessage");
+    if (message) {
+      if (authenticatedUser?.email_confirmed_at) {
+        message.textContent = "¡Correo confirmado! Tu cuenta está lista. Ya puedes iniciar sesión.";
+      } else {
+        message.textContent = "Regresaste del enlace de confirmación. Intenta iniciar sesión; si no funciona, solicita un nuevo correo de confirmación.";
+      }
+      message.hidden = false;
+    }
+    params.delete("verified");
+    const query = params.toString();
+    history.replaceState({}, document.title, window.location.pathname + (query ? `?${query}` : "") + window.location.hash);
+  }
+}
+
 function currentUser() {
   if (!authenticatedUser) return null;
 
@@ -441,7 +471,8 @@ async function initRegister() {
         email,
         password,
         options: {
-          data: { full_name: name }
+          data: { full_name: name },
+          emailRedirectTo: new URL("login.html?verified=1", window.location.href).href
         }
       });
 
@@ -692,6 +723,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   authReady = true;
   updateAccountNav();
+  handleAuthRedirectFeedback();
 
   initRegister();
   initLogin();
