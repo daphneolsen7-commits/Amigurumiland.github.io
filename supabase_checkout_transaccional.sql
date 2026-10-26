@@ -200,11 +200,11 @@ begin
     'Registrada'
   );
 
-  -- 14. Registrar pago pendiente y simulado; no se cobra dinero real
+  -- 14. Registrar pago pendiente; solo el método simulado se marca como simulación.
   insert into public.pagos (
     pedido_id, metodo, estado, referencia, importe, es_simulacion
   ) values (
-    v_pedido_id, v_metodo, 'Pendiente', v_referencia, v_subtotal, true
+    v_pedido_id, v_metodo, 'Pendiente', v_referencia, v_subtotal, (v_metodo = 'simulado')
   );
 
   -- 15. Registrar envío

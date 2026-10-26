@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Consultar pedido | Amigurumiland</title>
+  <link rel="icon" type="image/png" href="assets/Logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+  <header class="nav">
+    <a class="brand" href="index.html"><img src="assets/Logo.png" alt=""><span>Amigurumiland</span> ♡</a>
+    <button class="icon-btn menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="site-nav" onclick="toggleNav()">☰</button>
+    <nav class="site-nav" id="site-nav" aria-label="Navegación principal">
+      <a href="index.html">Inicio</a><a href="productos.html">Productos</a><a href="pedidos.html">Mis pedidos</a><a href="login.html" id="accountNav">Iniciar sesión</a>
+    </nav>
+    <a class="icon-btn cart-link" href="carrito.html" aria-label="Abrir carrito"><span aria-hidden="true">🛒</span><span class="cart-count" id="cartCount">0</span></a>
+  </header>
+  <div id="statusMessage" class="toast" role="status" aria-live="polite"></div>
+  <main id="main-content" class="container">
+    <section class="section page-heading"><p class="eyebrow">SEGUIMIENTO</p><h1>Consulta tu pedido</h1><p class="muted">Escribe el código del pedido y el correo usado al comprar. Solo mostraremos información si ambos datos coinciden.</p></section>
+    <section class="form-card">
+      <form id="orderLookupForm">
+        <label for="orderCode">Código del pedido</label>
+        <input class="field" id="orderCode" name="orderCode" required maxlength="24" autocomplete="off" placeholder="AMI-1A2B3C4D5E" aria-describedby="orderCodeHelp">
+        <small class="muted" id="orderCodeHelp">El código aparece en la confirmación de compra.</small>
+        <label for="orderEmail">Correo de compra</label>
+        <input class="field" id="orderEmail" name="orderEmail" type="email" required maxlength="254" autocomplete="email" placeholder="correo@ejemplo.com">
+        <p id="orderLookupFeedback" class="form-error" role="status" aria-live="polite"></p>
+        <button class="btn dark" type="submit">Consultar pedido</button>
+      </form>
+    </section>
+    <section class="section" aria-live="polite"><div id="orderLookupResult"></div></section>
+  </main>
+  <footer><div class="footer"><div><h3>♡ Amigurumiland</h3><p>Muñecos tejidos a mano y personalizables.</p></div><div><b>Enlaces</b><a href="index.html">Inicio</a><a href="productos.html">Productos</a><a href="pedidos.html">Mis pedidos</a></div><div><b>Contacto</b><p><a id="waLinkFooter" target="_blank" rel="noopener">WhatsApp</a></p></div></div></footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="script.js"></script>
+  <script>
+    document.getElementById("orderLookupForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const feedback = document.getElementById("orderLookupFeedback");
+      feedback.textContent = "";
+      lookupOrder();
+    });
+  </script>
+</body>
+</html>
