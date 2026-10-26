@@ -5,7 +5,7 @@
   const money = value => "$" + Number(value || 0).toFixed(2);
   const date = value => value ? new Date(value).toLocaleString("es-EC",{dateStyle:"medium",timeStyle:"short"}) : "Sin fecha";
   const say = (message, error = false) => { status.textContent = message; status.className = error ? "admin-error" : "admin-success"; };
-  const db = () => window.supabaseClient;
+  const db = () => typeof supabaseClient !== "undefined" ? supabaseClient : null;
   async function requireAdmin() {
     if (!db()) throw new Error("No está disponible la conexión con Supabase.");
     const { data: { session }, error } = await db().auth.getSession();
