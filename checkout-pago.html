@@ -55,9 +55,18 @@
                         </div>
                         <p class="payment-footnote" id="cardDemoNote">Vista de demostración: utiliza únicamente datos ficticios. No introduzcas información de una tarjeta real.</p>
                     </div>
-                    <div id="transferPaymentFields" class="payment-fields" hidden><div class="paypal-panel"><h2>Transferencia bancaria de prueba</h2><p>Esta opción registra una referencia ficticia. No se muestran datos bancarios ni se verifica una transferencia real.</p></div></div>
+                    <div id="transferPaymentFields" class="payment-fields" hidden>
+                        <div class="paypal-panel"><h2>Transferencia bancaria de prueba</h2><p>Completa estos datos ficticios para simular que realizaste una transferencia. No se consulta ningún banco ni se verifica dinero real.</p></div>
+                        <label>Nombre de quien transfiere<input class="field" id="transferHolder" autocomplete="off" maxlength="80" placeholder="Nombre ficticio"></label>
+                        <label>Referencia de transferencia<input class="field" id="transferReference" autocomplete="off" maxlength="30" placeholder="Ej. TRANSFER-DEMO-123"></label>
+                        <label>Fecha de transferencia<input class="field" id="transferDate" type="date"></label>
+                        <p class="payment-footnote">Usa únicamente datos inventados. No ingreses números de cuenta reales.</p>
+                    </div>
                     <div id="paypalPaymentFields" class="payment-fields" hidden>
-                        <div class="paypal-panel"><span class="paypal-wordmark">PayPal</span><h2>Continuar con PayPal</h2><p>Seleccionaste PayPal para completar tu compra. En esta versión se mostrará el flujo de prueba de la tienda.</p><p class="payment-footnote">No se abrirá una sesión real de PayPal ni se efectuará un cobro.</p></div>
+                        <div class="paypal-panel"><span class="paypal-wordmark">PayPal</span><h2>Simulación de PayPal</h2><p>Ingresa un nombre y correo ficticios para continuar con el flujo de demostración.</p></div>
+                        <label>Nombre de la cuenta de prueba<input class="field" id="paypalName" autocomplete="off" maxlength="80" placeholder="Nombre ficticio"></label>
+                        <label>Correo de la cuenta de prueba<input class="field" id="paypalEmail" type="email" autocomplete="off" maxlength="254" placeholder="demo@example.com"></label>
+                        <p class="payment-footnote">No se abrirá una sesión real de PayPal ni se efectuará un cobro. Nunca ingreses tu contraseña.</p>
                     </div>
                     <button class="btn dark full payment-submit" type="button" onclick="processPayment()">Pagar ahora</button>
                     <p class="payment-footnote payment-security"><span aria-hidden="true">▣</span> Revisa tu pedido antes de confirmar</p>
