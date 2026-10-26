@@ -7,7 +7,7 @@ Sitio web de comercio electrónico de amigurumis. Incluye catálogo y filtros, p
 1. Descomprime la carpeta completa.
 2. Abre `index.html` o publica la carpeta en un hosting estático como GitHub Pages.
 3. Para probar compras, crea una cuenta, inicia sesión, agrega un producto al carrito y completa los formularios del checkout.
-4. La información de cuentas, pedidos, reseñas y cotizaciones se guarda actualmente en el almacenamiento del navegador (`localStorage` / `sessionStorage`). Para revisar de nuevo los datos, usa el mismo navegador y el mismo perfil.
+4. La autenticación, el catálogo activo, el checkout transaccional y el historial de pedidos usan Supabase. El carrito y los datos temporales del checkout permanecen en el navegador. Las reseñas, las cotizaciones y la consulta pública de pedidos todavía tienen partes que usan `localStorage`; no deben considerarse integradas hasta completar esos flujos.
 
 ## Estado de los pagos
 
@@ -15,13 +15,13 @@ El flujo de pago valida los campos y registra un resultado de prueba; no se cone
 
 ## Importante: cómo hacer que funcione desde cualquier laptop
 
-El hosting estático publica los archivos, pero no comparte el `localStorage` de un visitante con otro. Por eso, en el estado actual, el profesor puede navegar por el sitio desde cualquier equipo, pero los registros y pedidos creados en un navegador no aparecerán automáticamente en otro. Para conseguir persistencia compartida hay que desplegar una API/backend y una base de datos en línea, y cambiar el JavaScript para que las operaciones de registro, inicio de sesión, cotizaciones, pedidos y reseñas usen esa API.
+El sitio usa GitHub Pages para la interfaz y Supabase para autenticación y datos transaccionales. Los pedidos confirmados por el checkout y el historial se comparten a través de Supabase; el carrito es local por diseño. Antes de considerar terminada la integración, hay que migrar las reseñas y cotizaciones restantes a sus tablas de Supabase, implementar una consulta segura de pedidos y conectar el almacenamiento de imágenes de referencia. No se debe usar `localStorage` como fuente de verdad para pagos o pedidos.
 
-Arquitectura sencilla recomendada para la siguiente etapa: **GitHub Pages (frontend) + API Node.js/Express (Render u otro hosting de backend) + PostgreSQL administrado (Neon/Supabase) o MariaDB administrada**. Las contraseñas deben verificarse en el servidor con Argon2id/bcrypt; no debe confiarse en autenticación ni validaciones solo del navegador. La API debe proteger las rutas de cuenta y pedidos, validar los datos y guardar cada pedido y sus detalles en una transacción. Las tarjetas/CVV no deben almacenarse; para pagos reales se integraría una pasarela, pero para esta entrega se conserva el flujo de pago de prueba.
+Arquitectura actual: **GitHub Pages (frontend) + Supabase Auth + PostgreSQL/Supabase (backend y base de datos)**. Las reglas sensibles se validan en PostgreSQL mediante RLS y funciones transaccionales. El checkout actual registra pedidos y descuenta inventario de forma atómica; la transferencia sigue pendiente de verificación manual y el pago simulado no cobra dinero. No se deben almacenar números de tarjeta ni CVV. Para pagos reales hará falta una pasarela y verificación real del cobro.
 
 ## Modelo de datos
 
-`modelo_bd_amigurumiland.sql` documenta el modelo MariaDB propuesto. Todavía no se ejecuta ni se conecta desde la web. Incluye usuarios, categorías, productos e imágenes, puntos de retiro, pedidos y detalles, pagos, facturas, reseñas y cotizaciones.
+La base de datos activa está en Supabase. El esquema incluye categorías, perfiles, productos, puntos de retiro, pedidos, detalles, pagos, facturas, envíos, cotizaciones, imágenes de cotización y reseñas, con RLS habilitado. Los cambios SQL deben guardarse también como migraciones versionadas; no ejecutes a ciegas el archivo de checkout completo sobre una base ya existente.
 
 
 ## Catálogo de productos e imágenes
