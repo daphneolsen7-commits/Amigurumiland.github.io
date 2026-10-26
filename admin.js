@@ -49,7 +49,7 @@
         <div class="admin-actions">
           ${approve?`<button class="btn dark" data-approve="${escape(payment.id)}">Aprobar transferencia verificada</button>`:""}
           ${shipment?`<select class="field" aria-label="Estado de retiro para ${escape(order.codigo)}" data-shipment="${escape(order.id)}">
-            ${["Pendiente","Preparación","Listo para retiro","Entregado","Cancelado"].map(s=>`<option ${shipment.estado===s?"selected":""}>${s}</option>`).join("")}
+            ${(shipment.estado === "Cancelado" ? ["Cancelado"] : ["Pendiente","Preparación","Listo para retiro","Entregado"]).map(s=>`<option ${shipment.estado===s?"selected":""}>${s}</option>`).join("")}
           </select><button class="btn light" data-save-shipment="${escape(order.id)}">Guardar estado</button>`:""}
         </div>
       </article>`;
