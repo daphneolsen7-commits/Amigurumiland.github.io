@@ -318,7 +318,12 @@ async function processPayment() {
   const err = document.getElementById("paymentError");
   const button = document.querySelector('button[onclick="processPayment()"]');
 
+  if (!err) {
+    console.error("No existe el contenedor de errores del pago.");
+    return;
+  }
   if (!data) {
+    err.textContent = "Tus datos de compra expiraron. Vuelve al paso de datos.";
     location.href = "checkout-datos.html";
     return;
   }
@@ -327,6 +332,17 @@ async function processPayment() {
     err.textContent = "No está disponible la conexión con la base de datos. Inténtalo más tarde.";
     return;
   }
+
+  // Verifica la sesión real de Supabase antes de ejecutar la función transaccional.
+  // Así evitamos que una sesión visual desactualizada impida guardar el pedido.
+  const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+  if (authError || !authData?.user) {
+    console.error("Sesión no válida al finalizar compra:", authError?.message || "Sin usuario autenticado");
+    err.textContent = "Tu sesión expiró. Inicia sesión nuevamente y vuelve a intentar la compra.";
+    return;
+  }
+  authenticatedUser = authData.user;
+  authReady = true;
 
   const payment = validatePayment();
   if (!payment) return;
@@ -387,10 +403,25 @@ async function processPayment() {
     );
 
     if (error) {
-      console.error("Error registrando el pedido en Supabase:", error.message);
-      err.textContent = error.message.includes("Stock insuficiente")
-        ? "Uno de los productos ya no tiene suficiente stock. Actualiza el carrito e inténtalo de nuevo."
-        : "No se pudo registrar el pedido en la base de datos. No se ha confirmado ninguna compra; inténtalo nuevamente.";
+      console.error("Error registrando el pedido en Supabase:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      const message = String(error.message || "");
+      if (message.includes("Stock insuficiente")) {
+        err.textContent = "Uno de los productos ya no tiene suficiente stock. Actualiza el carrito e inténtalo de nuevo.";
+      } else if (/iniciar sesión|auth|JWT|permission denied/i.test(message)) {
+        err.textContent = "Supabase no reconoce tu sesión o no autoriza la compra. Cierra sesión, vuelve a iniciar sesión e inténtalo de nuevo.";
+      } else {
+        err.textContent = "Supabase rechazó el pedido y no se guardó ninguna compra. Detalle: " + message.slice(0, 220);
+      }
+      return;
+    }
+    if (!result || !result.pedido_id || !result.codigo) {
+      console.error("La función de compra no devolvió confirmación válida:", result);
+      err.textContent = "La base de datos no confirmó el pedido. No vaciamos el carrito; inténtalo de nuevo.";
       return;
     }
 
@@ -427,7 +458,7 @@ async function processPayment() {
     location.href = "confirmacion.html";
   } catch (error) {
     console.error("Error inesperado al registrar el pedido:", error);
-    err.textContent = "No se pudo conectar con Supabase. Revisa tu conexión e inténtalo nuevamente.";
+    err.textContent = "No se pudo completar el registro del pedido: " + String(error?.message || "error de conexión").slice(0, 220);
   } finally {
     if (button) {
       button.disabled = false;
@@ -1103,6 +1134,25 @@ function initAccount() {
 async function initMyOrders() {
   const box = document.getElementById("myOrders");
   if (!box) return;
+  if (typeof supabaseClient === "undefined") {
+    box.innerHTML = '<p class="form-error" role="alert">No está disponible la conexión con Supabase.</p>';
+    return;
+  }
+
+  // Recupera el usuario directamente del cliente de Supabase en vez de depender
+  // únicamente de la copia local de la sesión mantenida por la interfaz.
+  try {
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+    if (authError) throw authError;
+    authenticatedUser = authData?.user || null;
+    authReady = true;
+    updateAccountNav();
+  } catch (error) {
+    console.error("No se pudo validar la sesión para Mis pedidos:", error.message);
+    box.innerHTML = '<p class="form-error" role="alert">No se pudo verificar tu sesión. Inicia sesión nuevamente y recarga esta página.</p>';
+    return;
+  }
+
   if (!currentUser()) {
     box.innerHTML = '<div class="lookup-card"><h2>Inicia sesión para ver tus pedidos</h2><p class="muted">Aquí aparecerán automáticamente las compras asociadas a tu cuenta.</p><a class="btn dark" href="login.html?next=pedidos.html">Iniciar sesión</a></div>';
     return;
@@ -1110,12 +1160,8 @@ async function initMyOrders() {
 
   const user = currentUser();
   if (!user) return;
-  if (typeof supabaseClient === "undefined") {
-    box.innerHTML = '<p class="form-error" role="alert">No está disponible la conexión con la base de datos.</p>';
-    return;
-  }
 
-  box.innerHTML = '<p class="muted" role="status">Cargando tus pedidos…</p>';
+  box.innerHTML = '<p class="muted" role="status">Cargando tus pedidos desde Supabase…</p>';
 
   try {
     const { data: orders, error } = await supabaseClient
