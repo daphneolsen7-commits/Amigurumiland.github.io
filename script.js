@@ -882,11 +882,13 @@ function initPasswordReset() {
     try {
       const { data, error } = await supabaseClient.auth.getSession();
       if (error) throw error;
-      recoverySessionReady = Boolean(data.session);
-      if (!recoverySessionReady) {
-        feedback.textContent = "El enlace no es válido o ha caducado. Solicita uno nuevo.";
-        form.querySelector('[type="submit"]').disabled = true;
-      }
+      // Una sesión normal no demuestra que el usuario abrió un enlace de recuperación.
+      // Solo PASSWORD_RECOVERY, recibido desde el flujo de Supabase Auth, habilita el cambio.
+      recoverySessionReady = false;
+      form.querySelector('[type="submit"]').disabled = true;
+      feedback.textContent = data.session
+        ? "Esperando la validación del enlace de recuperación…"
+        : "El enlace no es válido o ha caducado. Solicita uno nuevo.";
     } catch (error) {
       feedback.textContent = "No se pudo validar el enlace. Solicita uno nuevo.";
       form.querySelector('[type="submit"]').disabled = true;
