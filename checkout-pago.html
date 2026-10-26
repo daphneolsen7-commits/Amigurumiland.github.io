@@ -38,6 +38,7 @@
             <div class="checkout-layout">
                 <div class="form-card"><a class="back-link" href="checkout-datos.html">← Volver a datos</a>
                     <h1>Método de pago</h1>
+                    <p class="notice">Esta tienda registra pedidos de prueba; no procesa pagos reales. Los pagos quedarán pendientes de verificación.</p>
                     <div id="paymentError" class="form-error" role="alert"></div>
                     <div class="payment-methods"><label class="radio-card"><input type="radio" name="payment"
                                 value="Tarjeta" checked
@@ -56,9 +57,8 @@
                         <label>Referencia de transferencia<input class="field" id="transferReference"
                                 placeholder="TRANSF-123456" maxlength="20"></label>
                     </div>
-                    <div id="paypalPaymentFields" class="payment-fields" hidden><label>Correo de PayPal<input
-                                class="field" id="paypalEmail" type="email" autocomplete="email"
-                                placeholder="correo@paypal.com"></label>
+                    <div id="paypalPaymentFields" class="payment-fields" hidden>
+                        <p class="notice">PayPal aún no está conectado a un proveedor real. El pedido quedará pendiente y no se realizará ningún cobro.</p>
                     </div>
                     <button class="btn dark full" type="button" onclick="processPayment()">Confirmar pago</button>
                 </div>
