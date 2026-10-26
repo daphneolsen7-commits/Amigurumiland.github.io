@@ -171,6 +171,17 @@ async function loadProductsFromSupabase() {
 
   console.log("Catálogo sincronizado con Supabase:", products.length, "productos");
 }
+let productStockChannel = null;
+function watchProductStock() {
+  if (typeof supabaseClient === "undefined" || productStockChannel) return;
+  productStockChannel = supabaseClient.channel("catalogo-stock-en-vivo")
+    .on("postgres_changes", { event: "*", schema: "public", table: "productos" }, () => loadProductsFromSupabase())
+    .subscribe();
+}
+window.addEventListener("focus", () => loadProductsFromSupabase());
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") loadProductsFromSupabase();
+});
 
 function getProduct() { return products.find(p => String(p.id) === new URLSearchParams(location.search).get("id")) }
 function openProductPage() {
@@ -436,7 +447,7 @@ function initPayment() {
 }
 function initData() { if (!cart.length) return location.href = "carrito.html"; checkoutSummary("checkoutSummary") }
 function initConfirmation() { const o = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null"); if (!o) return; document.getElementById("confirmationText").textContent = `Tu pedido ${o.id} fue registrado correctamente. `; document.getElementById("confirmationCard").innerHTML = `<p><b>Código del pedido</b><br>${escapeHtml(o.id)}</p><p><b>Método</b><br>${escapeHtml(o.paymentMethod)}</p><p><b>Estado del pago</b><br>${o.paymentStatus === "approved" ? "Aprobado" : "Pendiente de verificación"}</p><p><b>Total simulado</b><br>${money(o.total)}</p>` }
-function initConfirmation() { let order; try { order = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null") } catch { order = null } const text = document.getElementById("confirmationText"), card = document.getElementById("confirmationCard"); if (!order) { text.textContent = "No encontramos los datos de esta compra. Consulta tus pedidos para revisar su estado."; card.hidden = true; return } const items = (order.items || []).map(item => `<div class="summary-line"><span>${escapeHtml(item.name)}<small>${escapeHtml(item.customization)} × ${item.quantity}</small></span><b>${money(item.total)}</b></div>`).join(""), invoice = order.invoice || {}; text.textContent = order.paymentStatus === "approved" ? `Gracias, ${order.customerName}. Tu pedido fue confirmado y el pago quedó registrado.` : `Gracias, ${order.customerName}. Recibimos tu pedido; el pago está pendiente de verificación.`; card.innerHTML = `<section class="order-confirmation-block"><h2>Número de pedido</h2><div class="order-code-row"><strong id="orderCodeValue">${escapeHtml(order.id)}</strong><button class="btn light copy-order-button" type="button" onclick="copyOrderCode()" aria-label="Copiar número de pedido">Copiar</button></div><p class="notice">Copia este número para consultar el estado y dar seguimiento a tu pedido.</p></section><section class="order-confirmation-block"><h2>Resumen de compra</h2>${items}<div class="summary-total"><span>Total</span><b>${money(order.total)}</b></div></section><section class="order-confirmation-block"><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}</p><p><b>Estado:</b> ${order.paymentStatus === "approved" ? "Confirmado" : "Pendiente de verificación"}</p><p><b>Retiro:</b> ${escapeHtml(order.pickup)}</p></section><section class="order-confirmation-block"><h2>Datos de facturación</h2><p>${escapeHtml(invoice.name || order.customerName)} · ${invoice.idType === "ruc" ? "RUC" : "Cédula"} ${escapeHtml(invoice.idNumber || "")}</p><p>${escapeHtml(invoice.address || "")}</p><p>${escapeHtml(invoice.phone || "")} · ${escapeHtml(order.email)}</p></section>` }
+function initConfirmation() { let order; try { order = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null") } catch { order = null } const text = document.getElementById("confirmationText"), card = document.getElementById("confirmationCard"); if (!order) { text.textContent = "No encontramos los datos de esta compra. Consulta tus pedidos para revisar su estado."; card.hidden = true; return } const items = (order.items || []).map(item => `<div class="summary-line"><span>${escapeHtml(item.name)}<small>${escapeHtml(item.customization)} × ${item.quantity}</small></span><b>${money(item.total)}</b></div>`).join(""), invoice = order.invoice || {}; text.textContent = order.paymentStatus === "approved" ? `Gracias, ${order.customerName}. Tu pedido fue confirmado y el pago quedó registrado.` : `Gracias, ${order.customerName}. Recibimos tu pedido; el pago está pendiente de verificación.`; card.innerHTML = `<section class="order-confirmation-block"><h2>Número de pedido</h2><div class="order-code-row"><strong id="orderCodeValue">${escapeHtml(order.id)}</strong><button class="btn light copy-order-button" type="button" onclick="copyOrderCode()" aria-label="Copiar número de pedido">Copiar</button></div><p class="notice">Tu pedido está asociado a tu cuenta. Puedes verlo junto con tus otras compras en Mis pedidos; el código queda como opción adicional de consulta.</p><p><a class="btn dark" href="pedidos.html">Ver mis pedidos</a></p></section><section class="order-confirmation-block"><h2>Resumen de compra</h2>${items}<div class="summary-total"><span>Total</span><b>${money(order.total)}</b></div></section><section class="order-confirmation-block"><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}</p><p><b>Estado:</b> ${order.paymentStatus === "approved" ? "Confirmado" : "Pendiente de verificación"}</p><p><b>Retiro:</b> ${escapeHtml(order.pickup)}</p></section><section class="order-confirmation-block"><h2>Datos de facturación</h2><p>${escapeHtml(invoice.name || order.customerName)} · ${invoice.idType === "ruc" ? "RUC" : "Cédula"} ${escapeHtml(invoice.idNumber || "")}</p><p>${escapeHtml(invoice.address || "")}</p><p>${escapeHtml(invoice.phone || "")} · ${escapeHtml(order.email)}</p></section>` }
 async function copyOrderCode() { const code = document.getElementById("orderCodeValue")?.textContent; if (!code) return; try { await navigator.clipboard.writeText(code) } catch { const field = document.createElement("textarea"); field.value = code; field.style.position = "fixed"; field.style.opacity = "0"; document.body.append(field); field.select(); document.execCommand("copy"); field.remove() } showStatus("Número de pedido copiado.") }
 async function lookupOrder() {
   const codeField = document.getElementById("orderCode");
@@ -622,6 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const waf = document.getElementById("waLinkFooter"); if (waf) waf.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hola, necesito ayuda con mi pedido o personalización en Amigurumiland.")}`;
   renderProducts(); renderCartPage(); openProductPage();
   loadProductsFromSupabase();
+  watchProductStock();
   if (document.getElementById("checkoutSummary")) initData();
   if (document.getElementById("paymentSummary")) initPayment();
   if (document.getElementById("confirmationCard")) initConfirmation();
@@ -1091,6 +1103,10 @@ function initAccount() {
 async function initMyOrders() {
   const box = document.getElementById("myOrders");
   if (!box) return;
+  if (!currentUser()) {
+    box.innerHTML = '<div class="lookup-card"><h2>Inicia sesión para ver tus pedidos</h2><p class="muted">Aquí aparecerán automáticamente las compras asociadas a tu cuenta.</p><a class="btn dark" href="login.html?next=pedidos.html">Iniciar sesión</a></div>';
+    return;
+  }
 
   const user = currentUser();
   if (!user) return;
