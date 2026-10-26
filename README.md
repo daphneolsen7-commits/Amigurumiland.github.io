@@ -7,7 +7,7 @@ Sitio web de comercio electrónico de amigurumis. Incluye catálogo y filtros, p
 1. Descomprime la carpeta completa.
 2. Abre `index.html` o publica la carpeta en un hosting estático como GitHub Pages.
 3. Para probar compras, crea una cuenta, inicia sesión, agrega un producto al carrito y completa los formularios del checkout.
-4. La autenticación, el catálogo activo, el checkout transaccional y el historial de pedidos usan Supabase. El carrito y los datos temporales del checkout permanecen en el navegador. Las reseñas, las cotizaciones y la consulta pública de pedidos todavía tienen partes que usan `localStorage`; no deben considerarse integradas hasta completar esos flujos.
+4. La autenticación, el catálogo activo, el checkout transaccional, el historial, las cotizaciones, las reseñas y la consulta pública de pedidos usan Supabase. El carrito y los datos temporales del checkout permanecen en el navegador por diseño. Las imágenes de cotización se almacenan en un bucket privado y las imágenes de reseñas en un bucket público con permisos de carga restringidos.
 
 ## Estado de los pagos
 
@@ -15,9 +15,9 @@ El flujo de pago valida los campos y registra un resultado de prueba; no se cone
 
 ## Importante: cómo hacer que funcione desde cualquier laptop
 
-El sitio usa GitHub Pages para la interfaz y Supabase para autenticación y datos transaccionales. Los pedidos confirmados por el checkout y el historial se comparten a través de Supabase; el carrito es local por diseño. Antes de considerar terminada la integración, hay que migrar las reseñas y cotizaciones restantes a sus tablas de Supabase, implementar una consulta segura de pedidos y conectar el almacenamiento de imágenes de referencia. No se debe usar `localStorage` como fuente de verdad para pagos o pedidos.
+El sitio usa GitHub Pages para la interfaz y Supabase para autenticación y datos transaccionales. Los pedidos confirmados por el checkout y el historial se comparten a través de Supabase; el carrito es local por diseño. El panel administrativo se encuentra en `admin.html` y valida el rol contra Supabase. Permite revisar pedidos y pagos, actualizar estados de retiro y responder cotizaciones. Solo una cuenta incluida en `public.administradores` puede usarlo. No se debe usar `localStorage` como fuente de verdad para pagos o pedidos.
 
-Arquitectura actual: **GitHub Pages (frontend) + Supabase Auth + PostgreSQL/Supabase (backend y base de datos)**. Las reglas sensibles se validan en PostgreSQL mediante RLS y funciones transaccionales. El checkout actual registra pedidos y descuenta inventario de forma atómica; la transferencia sigue pendiente de verificación manual y el pago simulado no cobra dinero. No se deben almacenar números de tarjeta ni CVV. Para pagos reales hará falta una pasarela y verificación real del cobro.
+Arquitectura actual: **GitHub Pages (frontend) + Supabase Auth + PostgreSQL/Supabase (backend y base de datos)**. Las migraciones nuevas se versionan en `supabase/migrations/`; revisa el SQL antes de aplicarlo a otro proyecto. Las reglas sensibles se validan en PostgreSQL mediante RLS y funciones transaccionales. El checkout actual registra pedidos y descuenta inventario de forma atómica; la transferencia sigue pendiente de verificación manual y el pago simulado no cobra dinero. No se deben almacenar números de tarjeta ni CVV. Para pagos reales hará falta una pasarela y verificación real del cobro.
 
 ## Modelo de datos
 
