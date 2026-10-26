@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Amigurumiland | Pago</title>
+    <title>Amigurumiland | Finalizar compra</title>
     <link rel="icon" type="image/png" href="assets/Logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,33 +37,32 @@
                     Confirmación</span></div>
             <div class="checkout-layout">
                 <div class="form-card"><a class="back-link" href="checkout-datos.html">← Volver a datos</a>
-                    <h1>Método de pago</h1>
-                    <p class="notice">Esta tienda registra pedidos de prueba; no procesa pagos reales. Los pagos quedarán pendientes de verificación.</p>
+                    <h1>Finalizar compra</h1>
+                    <p class="muted">Elige cómo quieres realizar tu pago y revisa el resumen antes de continuar.</p>
                     <div id="paymentError" class="form-error" role="alert"></div>
-                    <div class="payment-methods"><label class="radio-card"><input type="radio" name="payment"
-                                value="Tarjeta" checked
-                                onchange="updatePaymentFields()"><span><b>Tarjeta</b></span></label>
-                        <label class="radio-card"><input type="radio" name="payment" value="Transferencia bancaria"
-                                onchange="updatePaymentFields()"><span><b>Transferencia</b></span></label>
-                        <label class="radio-card"><input type="radio" name="payment" value="PayPal"
-                                onchange="updatePaymentFields()"><span><b>PayPal</b></span></label>
+                    <div class="payment-methods" role="radiogroup" aria-label="Selecciona un método de pago">
+                        <label class="radio-card payment-choice"><input type="radio" name="payment" value="Tarjeta" checked onchange="updatePaymentFields()"><span><b>Tarjeta de crédito o débito</b><small>Visa · Mastercard · American Express</small></span><span class="payment-brand" aria-hidden="true">VISA</span></label>
+                        <label class="radio-card payment-choice"><input type="radio" name="payment" value="PayPal" onchange="updatePaymentFields()"><span><b>PayPal</b><small>Paga con tu cuenta PayPal</small></span><span class="paypal-wordmark" aria-hidden="true">PayPal</span></label>
                     </div>
-                    <div id="cardPaymentFields" class="payment-fields" hidden>
-                        <p class="notice">El pago con tarjeta aún no está conectado a una pasarela real. No ingreses números de tarjeta ni CVV.</p>
+                    <div id="cardPaymentFields" class="payment-fields">
+                        <h2>Información de la tarjeta</h2>
+                        <label>Nombre del titular<input class="field" id="cardholderName" autocomplete="cc-name" placeholder="Como aparece en la tarjeta" maxlength="80"></label>
+                        <label>Número de tarjeta<input class="field" id="cardNumber" inputmode="numeric" autocomplete="off" placeholder="4242 4242 4242 4242" maxlength="19" aria-describedby="cardDemoNote"></label>
+                        <div class="two-fields">
+                            <label>Fecha de vencimiento<input class="field" id="cardExpiry" inputmode="numeric" placeholder="MM/AA" maxlength="5" autocomplete="off"></label>
+                            <label>CVV<input class="field" id="cardCvv" inputmode="numeric" placeholder="123" maxlength="4" autocomplete="off"></label>
+                        </div>
+                        <p class="payment-footnote" id="cardDemoNote">Vista de demostración: utiliza únicamente datos ficticios. No introduzcas información de una tarjeta real.</p>
                     </div>
-                    <div id="transferPaymentFields" class="payment-fields" hidden>
-                        <p>Solicita los datos bancarios por WhatsApp y registra aquí la referencia de tu transferencia.
-                        </p>
-                        <label>Referencia de transferencia<input class="field" id="transferReference"
-                                placeholder="TRANSF-123456" maxlength="20"></label>
-                    </div>
+                    <div id="transferPaymentFields" class="payment-fields" hidden></div>
                     <div id="paypalPaymentFields" class="payment-fields" hidden>
-                        <p class="notice">PayPal aún no está conectado a un proveedor real. El pedido quedará pendiente y no se realizará ningún cobro.</p>
+                        <div class="paypal-panel"><span class="paypal-wordmark">PayPal</span><h2>Continuar con PayPal</h2><p>Seleccionaste PayPal para completar tu compra. En esta versión se mostrará el flujo de prueba de la tienda.</p><p class="payment-footnote">No se abrirá una sesión real de PayPal ni se efectuará un cobro.</p></div>
                     </div>
-                    <button class="btn dark full" type="button" onclick="processPayment()">Confirmar pago</button>
+                    <button class="btn dark full payment-submit" type="button" onclick="processPayment()">Pagar ahora</button>
+                    <p class="payment-footnote payment-security"><span aria-hidden="true">▣</span> Revisa tu pedido antes de confirmar</p>
                 </div>
                 <div class="summary-box">
-                    <h2>Total a pagar</h2>
+                    <h2>Resumen de tu pedido</h2>
                     <div id="paymentSummary"></div>
                 </div>
             </div>
