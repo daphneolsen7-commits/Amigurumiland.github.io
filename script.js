@@ -834,6 +834,113 @@ function initLogin() {
   });
 }
 
+
+function initPasswordRecovery() {
+  const form = document.getElementById("recoveryForm");
+  if (!form) return;
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const emailField = document.getElementById("recoveryEmail");
+    const feedback = document.getElementById("recoveryFeedback");
+    const button = form.querySelector('[type="submit"]');
+    const email = emailField.value.trim().toLowerCase();
+    feedback.textContent = "";
+    if (!isValidEmail(email)) {
+      feedback.textContent = "Escribe un correo electrónico válido.";
+      emailField.focus();
+      return;
+    }
+    if (typeof supabaseClient === "undefined") {
+      feedback.textContent = "El servicio de cuentas no está disponible. Inténtalo más tarde.";
+      return;
+    }
+    if (button) button.disabled = true;
+    try {
+      const redirectTo = new URL("restablecer-contrasena.html", location.href).href;
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+      feedback.textContent = "Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña. Revisa también spam.";
+      form.reset();
+    } catch (error) {
+      console.error("No se pudo solicitar recuperación:", error);
+      feedback.textContent = "No se pudo enviar el enlace. Comprueba la configuración de correo de Supabase e inténtalo de nuevo.";
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+}
+
+function initPasswordReset() {
+  const form = document.getElementById("resetPasswordForm");
+  if (!form) return;
+  const password = document.getElementById("newPassword");
+  const confirm = document.getElementById("confirmPassword");
+  const feedback = document.getElementById("resetPasswordFeedback");
+  let recoverySessionReady = false;
+
+  const showReady = async () => {
+    try {
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+      recoverySessionReady = Boolean(data.session);
+      if (!recoverySessionReady) {
+        feedback.textContent = "El enlace no es válido o ha caducado. Solicita uno nuevo.";
+        form.querySelector('[type="submit"]').disabled = true;
+      }
+    } catch (error) {
+      feedback.textContent = "No se pudo validar el enlace. Solicita uno nuevo.";
+      form.querySelector('[type="submit"]').disabled = true;
+    }
+  };
+  if (typeof supabaseClient === "undefined") {
+    feedback.textContent = "El servicio de cuentas no está disponible.";
+    form.querySelector('[type="submit"]').disabled = true;
+    return;
+  }
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY" && session) {
+      recoverySessionReady = true;
+      form.querySelector('[type="submit"]').disabled = false;
+      feedback.textContent = "Enlace validado. Elige una contraseña nueva.";
+    }
+  });
+  showReady();
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    feedback.textContent = "";
+    if (!recoverySessionReady) {
+      feedback.textContent = "Abre primero el enlace válido que recibiste por correo.";
+      return;
+    }
+    if (password.value.length < 8) {
+      feedback.textContent = "La contraseña debe tener al menos 8 caracteres.";
+      password.focus();
+      return;
+    }
+    if (password.value !== confirm.value) {
+      feedback.textContent = "Las contraseñas no coinciden.";
+      confirm.focus();
+      return;
+    }
+    const button = form.querySelector('[type="submit"]');
+    if (button) button.disabled = true;
+    try {
+      const { error } = await supabaseClient.auth.updateUser({ password: password.value });
+      if (error) throw error;
+      await supabaseClient.auth.signOut();
+      feedback.textContent = "Contraseña actualizada. Ya puedes iniciar sesión con tu nueva contraseña.";
+      form.reset();
+      window.setTimeout(() => { location.href = "login.html"; }, 1800);
+    } catch (error) {
+      console.error("No se pudo actualizar la contraseña:", error);
+      feedback.textContent = "No se pudo cambiar la contraseña. Solicita un enlace nuevo e inténtalo otra vez.";
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+}
+
 function initAccount() {
   const form = document.getElementById("accountForm");
   if (!form) return;
@@ -1026,6 +1133,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateAccountNav();
     initRegister();
     initLogin();
+    initPasswordRecovery();
+    initPasswordReset();
     console.error("Supabase no está disponible. Revisa el orden de los scripts.");
     return;
   }
@@ -1049,6 +1158,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   initRegister();
   initLogin();
+  initPasswordRecovery();
+  initPasswordReset();
   initAccount();
   initMyOrders();
 
