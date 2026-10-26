@@ -472,7 +472,7 @@ async function initRegister() {
         password,
         options: {
           data: { full_name: name },
-          emailRedirectTo: `${window.location.origin}/login.html?verified=1`
+          emailRedirectTo: new URL("login.html?verified=1", window.location.href).href
         }
       });
 
