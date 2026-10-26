@@ -46,6 +46,7 @@ CREATE POLICY "Administradores leen cotizaciones" ON public.cotizaciones FOR SEL
 DROP POLICY IF EXISTS "Administradores actualizan cotizaciones" ON public.cotizaciones;
 CREATE POLICY "Administradores actualizan cotizaciones" ON public.cotizaciones FOR UPDATE TO authenticated USING (public.es_administrador()) WITH CHECK (public.es_administrador());
 GRANT UPDATE ON TABLE public.cotizaciones, public.envios TO authenticated;
+GRANT DELETE ON TABLE public.cotizaciones TO authenticated;
 
 INSERT INTO storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
 VALUES ('amigurumiland-cotizaciones','amigurumiland-cotizaciones',false,5242880,ARRAY['image/jpeg','image/png','image/webp']),
