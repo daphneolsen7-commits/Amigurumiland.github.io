@@ -106,7 +106,8 @@ function renderProducts() {
 
 async function loadProductsFromSupabase() {
   if (typeof supabaseClient === "undefined") {
-    console.warn("Supabase no está disponible. Se conservan los productos locales.");
+    products.splice(0, products.length);
+    renderProducts(); renderCartPage(); openProductPage();
     return;
   }
 
@@ -118,6 +119,10 @@ async function loadProductsFromSupabase() {
 
   if (error) {
     console.error("No se pudo cargar el catálogo:", error.message);
+    products.splice(0, products.length);
+    renderProducts(); renderCartPage(); openProductPage();
+    const box = document.getElementById("products");
+    if (box) box.innerHTML = '<p class="form-error" role="alert">No se pudo conectar con el catálogo en línea. Recarga la página cuando tengas conexión.</p>';
     return;
   }
 
@@ -142,7 +147,10 @@ async function loadProductsFromSupabase() {
     .filter(Boolean);
 
   if (!syncedProducts.length) {
-    console.error("No se encontraron productos compatibles con el catálogo local.");
+    products.splice(0, products.length);
+    renderProducts(); renderCartPage(); openProductPage();
+    const box = document.getElementById("products");
+    if (box) box.innerHTML = '<p class="form-error" role="alert">No hay productos activos disponibles en la base de datos.</p>';
     return;
   }
 
@@ -173,6 +181,7 @@ function openProductPage() {
   window.custom = { color: initialColor, size: sizes[0][0], extra: 0, basePrice: p.price };
   box.innerHTML = `<div class="product"><div><img class="main-img" src="${img(p)}" alt="${escapeHtml(p.name)}" onerror="this.onerror=null;this.src='assets/amigurumis.png'"></div><div><div class="muted">${escapeHtml(p.cat)}</div><h1>${escapeHtml(p.name)}</h1><p>Elige el tamaño antes de agregar el producto al carrito.</p>${availableColors.length ? `<fieldset class="option-group"><legend>Color</legend><div class="option-row">${availableColors.map((c, i) => `<button class="swatch ${i === 0 ? "active" : ""}" type="button" aria-label="Elegir color ${escapeHtml(c[0])}" aria-pressed="${i === 0}" title="${escapeHtml(c[0])}" style="background:${c[1]}" onclick="chooseColor(${i},this)"></button>`).join("")}</div><p id="selectedColor" class="selection-label">Color seleccionado: ${escapeHtml(initialColor)}</p></fieldset>` : ""}<fieldset class="option-group"><legend>Tamaño</legend><div class="option-row">${sizes.map((s, i) => `<button class="size ${i === 0 ? "active" : ""}" type="button" aria-pressed="${i === 0}" onclick="chooseSize(${i},this)">${s[0]}</button>`).join("")}</div></fieldset><p id="selectedPrice" class="price">Precio: ${money(p.price)}</p><button class="btn dark full" onclick="addCustomized(${p.id})">Agregar al carrito</button><div class="help">¿Tienes dudas? <a href="${contactUrl(p.name)}" target="_blank" rel="noopener">Consultar por WhatsApp</a></div></div></div><div class="reviews-box"><h2>Reseñas</h2><div id="reviewsList">${renderReviews(p.id)}</div><div class="review-form"><label>Calificación<select class="field" id="reviewRating"><option value="5">5 ★★★★★</option><option value="4">4 ★★★★☆</option><option value="3">3 ★★★☆☆</option><option value="2">2 ★★☆☆☆</option><option value="1">1 ★☆☆☆☆</option></select></label><label>Tu reseña<textarea class="field" id="reviewText" maxlength="1000" rows="3" placeholder="Cuéntanos tu experiencia..."></textarea></label><label>Imágenes de referencia<input class="field" id="reviewImagesInput" type="file" accept="image/jpeg,image/png,image/webp" multiple><small class="muted">Hasta 3 imágenes JPG, PNG o WebP de 5 MB cada una.</small><span id="reviewImagePreview" class="image-previews" aria-live="polite"></span></label><p id="reviewFeedback" class="form-error" role="status"></p><button class="btn dark" type="button" onclick="submitReview(${p.id})">Enviar reseña</button></div></div>`;
   document.getElementById("reviewImagesInput").addEventListener("change", event => previewReferenceImages(event.target, "reviewImagePreview"));
+  loadReviews(p.id);
 }
 function chooseColor(i, b) {
   const p = getProduct(), availableColors = colorsForProduct(p);
@@ -220,19 +229,52 @@ function validatePayment() {
 function loadDB() { try { const db = JSON.parse(localStorage.getItem(DB_KEY) || '{"USUARIO":[],"DIRECCION":[],"PEDIDO":[],"DETALLE_PEDIDO":[],"PAGO":[],"ENVIO":[],"FACTURA":[],"RESENA":[],"COTIZACION":[]}'); return db && typeof db === "object" && !Array.isArray(db) ? db : null } catch { return null } }
 function saveDB(db) { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); return true } catch { return false } }
 async function submitQuote() {
-  const name = document.getElementById("quoteName"), email = document.getElementById("quoteEmail"), design = document.getElementById("quoteDesign"), size = document.getElementById("quoteSize"), colors = document.getElementById("quoteColors"), details = document.getElementById("quoteDetails"), input = document.getElementById("quoteImages"), feedback = document.getElementById("quoteFeedback");
-  feedback.textContent = "";[name, email, design, size, colors].forEach(clearFieldError);
-  if (!isValidName(name.value)) { setFieldError(name, "Ingresa un nombre válido."); name.focus(); return }
-  if (!isValidEmail(email.value.trim())) { setFieldError(email, "Ingresa un correo válido."); email.focus(); return }
-  if (!design.value.trim() || design.value.trim().length > 1000) { setFieldError(design, "Describe tu idea (máximo 1000 caracteres)."); design.focus(); return }
-  if (!["Pequeño (15 cm)", "Mediano (20 cm)", "Grande (30 cm)"].includes(size.value)) { setFieldError(size, "Selecciona un tamaño disponible."); size.focus(); return }
-  if (!colors.value.trim() || colors.value.trim().length > 120) { setFieldError(colors, "Indica los colores (máximo 120 caracteres)."); colors.focus(); return }
-  const images = await prepareReferenceImages(input); if (images === null) { input.focus(); return }
-  const db = loadDB(); if (!db) { feedback.textContent = "No se pudo guardar tu solicitud."; return }
-  db.COTIZACION = Array.isArray(db.COTIZACION) ? db.COTIZACION : [];
-  db.COTIZACION.push({ id: `COT-${Date.now().toString().slice(-6)}`, usuario_id: user.id, nombre: user.nombre, email: user.email, diseno: design.value.trim(), tamano: size.value, colores: colors.value.trim(), detalles: details.value.trim(), imagenes: images, fecha: new Date().toISOString() });
-  if (!saveDB(db)) { feedback.textContent = "No se pudo guardar. Reduce el tamaño o la cantidad de imágenes."; return }
-  document.querySelector("#quoteForm")?.reset(); clearReferencePreviews(document.getElementById("quoteImagePreview")); feedback.textContent = "Solicitud enviada correctamente.";
+  if (!requireLogin()) return;
+  const user = currentUser();
+  if (!user || typeof supabaseClient === "undefined") return;
+  const design = document.getElementById("quoteDesign");
+  const size = document.getElementById("quoteSize");
+  const colors = document.getElementById("quoteColors");
+  const details = document.getElementById("quoteDetails");
+  const input = document.getElementById("quoteImages");
+  const feedback = document.getElementById("quoteFeedback");
+  feedback.textContent = "";
+  [design, size, colors].forEach(clearFieldError);
+  if (!design.value.trim() || design.value.trim().length > 1000) { setFieldError(design, "Describe tu idea (máximo 1000 caracteres)."); design.focus(); return; }
+  if (!["Pequeño (15 cm)", "Mediano (20 cm)", "Grande (30 cm)"].includes(size.value)) { setFieldError(size, "Selecciona un tamaño disponible."); size.focus(); return; }
+  if (!colors.value.trim() || colors.value.trim().length > 120) { setFieldError(colors, "Indica los colores (máximo 120 caracteres)."); colors.focus(); return; }
+  const processedImages = await prepareReferenceImages(input);
+  if (processedImages === null) { input.focus(); return; }
+  let quoteId = null;
+  const uploadedPaths = [];
+  try {
+    const { data: quote, error: quoteError } = await supabaseClient.from("cotizaciones")
+      .insert({ usuario_id: user.id, diseno: design.value.trim(), tamano: size.value, colores: colors.value.trim(), detalles: details.value.trim().slice(0, 1000) })
+      .select("id").single();
+    if (quoteError) throw quoteError;
+    quoteId = quote.id;
+    for (let i = 0; i < processedImages.length; i++) {
+      const blob = await fetch(processedImages[i]).then(response => response.blob());
+      const path = `${user.id}/${quoteId}/referencia-${i + 1}.jpg`;
+      const { error: uploadError } = await supabaseClient.storage.from("amigurumiland-cotizaciones")
+        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
+      if (uploadError) throw uploadError;
+      uploadedPaths.push(path);
+    }
+    if (uploadedPaths.length) {
+      const { error: imageRowsError } = await supabaseClient.from("imagenes_cotizacion")
+        .insert(uploadedPaths.map(storage_path => ({ cotizacion_id: quoteId, storage_path })));
+      if (imageRowsError) throw imageRowsError;
+    }
+    document.querySelector("#quoteForm")?.reset();
+    clearReferencePreviews(document.getElementById("quoteImagePreview"));
+    feedback.textContent = "Solicitud enviada correctamente y guardada en tu cuenta.";
+  } catch (error) {
+    console.error("No se pudo guardar la cotización:", error.message);
+    if (uploadedPaths.length) await supabaseClient.storage.from("amigurumiland-cotizaciones").remove(uploadedPaths);
+    if (quoteId) await supabaseClient.from("cotizaciones").delete().eq("id", quoteId).eq("usuario_id", user.id);
+    feedback.textContent = "No se pudo guardar la cotización en línea. Revisa tu conexión e inténtalo de nuevo.";
+  }
 }
 async function processPayment() {
   const data = getCheckout();
@@ -352,10 +394,123 @@ function initData() { if (!cart.length) return location.href = "carrito.html"; c
 function initConfirmation() { const o = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null"); if (!o) return; document.getElementById("confirmationText").textContent = `Tu pedido ${o.id} fue registrado correctamente. `; document.getElementById("confirmationCard").innerHTML = `<p><b>Código del pedido</b><br>${escapeHtml(o.id)}</p><p><b>Método</b><br>${escapeHtml(o.paymentMethod)}</p><p><b>Estado del pago</b><br>${o.paymentStatus === "approved" ? "Aprobado" : "Pendiente de verificación"}</p><p><b>Total simulado</b><br>${money(o.total)}</p>` }
 function initConfirmation() { let order; try { order = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null") } catch { order = null } const text = document.getElementById("confirmationText"), card = document.getElementById("confirmationCard"); if (!order) { text.textContent = "No encontramos los datos de esta compra. Consulta tus pedidos para revisar su estado."; card.hidden = true; return } const items = (order.items || []).map(item => `<div class="summary-line"><span>${escapeHtml(item.name)}<small>${escapeHtml(item.customization)} × ${item.quantity}</small></span><b>${money(item.total)}</b></div>`).join(""), invoice = order.invoice || {}; text.textContent = order.paymentStatus === "approved" ? `Gracias, ${order.customerName}. Tu pedido fue confirmado y el pago quedó registrado.` : `Gracias, ${order.customerName}. Recibimos tu pedido; el pago está pendiente de verificación.`; card.innerHTML = `<section class="order-confirmation-block"><h2>Número de pedido</h2><div class="order-code-row"><strong id="orderCodeValue">${escapeHtml(order.id)}</strong><button class="btn light copy-order-button" type="button" onclick="copyOrderCode()" aria-label="Copiar número de pedido">Copiar</button></div><p class="notice">Copia este número para consultar el estado y dar seguimiento a tu pedido.</p></section><section class="order-confirmation-block"><h2>Resumen de compra</h2>${items}<div class="summary-total"><span>Total</span><b>${money(order.total)}</b></div></section><section class="order-confirmation-block"><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}</p><p><b>Estado:</b> ${order.paymentStatus === "approved" ? "Confirmado" : "Pendiente de verificación"}</p><p><b>Retiro:</b> ${escapeHtml(order.pickup)}</p></section><section class="order-confirmation-block"><h2>Datos de facturación</h2><p>${escapeHtml(invoice.name || order.customerName)} · ${invoice.idType === "ruc" ? "RUC" : "Cédula"} ${escapeHtml(invoice.idNumber || "")}</p><p>${escapeHtml(invoice.address || "")}</p><p>${escapeHtml(invoice.phone || "")} · ${escapeHtml(order.email)}</p></section>` }
 async function copyOrderCode() { const code = document.getElementById("orderCodeValue")?.textContent; if (!code) return; try { await navigator.clipboard.writeText(code) } catch { const field = document.createElement("textarea"); field.value = code; field.style.position = "fixed"; field.style.opacity = "0"; document.body.append(field); field.select(); document.execCommand("copy"); field.remove() } showStatus("Número de pedido copiado.") }
-function lookupOrder() { const codeField = document.getElementById("orderCode"), emailField = document.getElementById("orderEmail"), code = codeField.value.trim().toUpperCase(), email = emailField.value.trim().toLowerCase(), db = loadDB(), result = document.getElementById("orderLookupResult"); clearFieldError(codeField); clearFieldError(emailField); result.replaceChildren(); if (!/^AM-\d{6}$/.test(code)) { setFieldError(codeField, "Usa el formato AM-123456."); codeField.focus(); return } if (!isValidEmail(email)) { setFieldError(emailField, "Ingresa un correo válido."); emailField.focus(); return } if (!db) { result.innerHTML = '<p class="order-empty">No se pudo consultar el almacenamiento local.</p>'; return } const user = (db.USUARIO || []).find(u => String(u.email).toLowerCase() === email), order = user && (db.PEDIDO || []).find(p => p.id === code && p.usuario_id === user.id); if (!order) { result.innerHTML = '<p class="order-empty">No encontramos un pedido con esos datos. Verifica el código y el correo.</p>'; return } const details = (db.DETALLE_PEDIDO || []).filter(d => d.pedido_id === order.id), pay = (db.PAGO || []).find(p => p.pedido_id === order.id), env = (db.ENVIO || []).find(e => e.pedido_id === order.id); result.innerHTML = `<article class="order-card"><div class="order-card-header"><div><b>Pedido ${escapeHtml(order.id)}</b><time>${new Date(order.fecha).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" })}</time></div><span class="order-status is-pending">${escapeHtml(order.estado)}</span></div><ul class="order-items">${details.map(d => { const p = products.find(p => p.id === d.producto_id); return `<li>${escapeHtml(p?.name || "Producto")} · ${escapeHtml(d.tamano)} × ${d.cantidad}</li>` }).join("")}</ul><div class="order-card-footer"><span>Retiro: ${escapeHtml(order.punto_retiro)}</span><b>Total: ${money(order.total)}</b></div><p class="muted">Pago: ${pay?.estado === "approved" ? "Aprobado" : "Transferencia por verificar"}</p><p class="muted">Disponible para recoger desde: ${env ? new Date(env.fecha_disponible).toLocaleDateString("es-EC", { dateStyle: "long" }) : "Pendiente de registro"}</p></article>` }
-function getReviews(id) { try { const reviews = JSON.parse(localStorage.getItem(`amigurumiland_reviews_${id}`) || "[]"); return Array.isArray(reviews) ? reviews : [] } catch { return [] } }
-function renderReviews(id) { const reviews = getReviews(id); return reviews.length ? reviews.map(review => { const images = Array.isArray(review.images) ? review.images.filter(src => typeof src === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(src)) : []; return `<div class="review-item"><b>${"★".repeat(Math.min(5, Math.max(1, Number(review.rating) || 1)))}${"☆".repeat(5 - Math.min(5, Math.max(1, Number(review.rating) || 1)))}</b><p>${escapeHtml(review.comment)}</p><span class="muted">${new Date(review.date).toLocaleDateString("es-EC")}</span>${images.length ? `<div class="review-images">${images.map(src => `<img src="${escapeHtml(src)}" alt="Imagen adjunta a la reseña" loading="lazy">`).join("")}</div>` : ""}</div>` }).join("") : '<p class="muted">Aún no hay reseñas para este producto.</p>' }
-async function submitReview(id) { const text = document.getElementById("reviewText"), rating = document.getElementById("reviewRating"), input = document.getElementById("reviewImagesInput"), feedback = document.getElementById("reviewFeedback"); feedback.textContent = ""; clearFieldError(text); if (!text.value.trim() || text.value.trim().length > 1000) { setFieldError(text, "Escribe una reseña de 1 a 1000 caracteres."); text.focus(); return } if (!["1", "2", "3", "4", "5"].includes(rating.value)) { setFieldError(rating, "Selecciona una calificación válida."); rating.focus(); return } const images = await prepareReferenceImages(input); if (images === null) { input.focus(); return } const reviews = getReviews(id); reviews.unshift({ rating: Number(rating.value), comment: text.value.trim(), images, date: new Date().toISOString() }); try { localStorage.setItem(`amigurumiland_reviews_${id}`, JSON.stringify(reviews)) } catch { feedback.textContent = "No se pudo guardar. Reduce el tamaño o la cantidad de imágenes."; return } text.value = ""; input.value = ""; clearReferencePreviews(document.getElementById("reviewImagePreview")); document.getElementById("reviewsList").innerHTML = renderReviews(id); feedback.textContent = "Reseña guardada en este navegador." }
+async function lookupOrder() {
+  const codeField = document.getElementById("orderCode");
+  const emailField = document.getElementById("orderEmail");
+  const code = codeField.value.trim().toUpperCase();
+  const email = emailField.value.trim().toLowerCase();
+  const result = document.getElementById("orderLookupResult");
+  clearFieldError(codeField); clearFieldError(emailField); result.replaceChildren();
+  if (!/^(?:AMI-[A-F0-9]{10}|AM-\\d{6})$/.test(code)) {
+    setFieldError(codeField, "Ingresa el código completo de tu pedido, por ejemplo AMI-1A2B3C4D5E."); codeField.focus(); return;
+  }
+  if (!isValidEmail(email)) { setFieldError(emailField, "Ingresa un correo válido."); emailField.focus(); return; }
+  if (typeof supabaseClient === "undefined") { result.innerHTML = '<p class="order-empty">No está disponible la conexión con la base de datos.</p>'; return; }
+  result.innerHTML = '<p class="muted" role="status">Consultando tu pedido…</p>';
+  try {
+    const { data, error } = await supabaseClient.rpc("consultar_pedido_publico", { p_codigo: code, p_email: email });
+    if (error) throw error;
+    if (!data) { result.innerHTML = '<p class="order-empty">No encontramos un pedido con esos datos. Verifica el código y el correo.</p>'; return; }
+    const items = (data.detalles || []).map(item => {
+      const options = [item.color, item.tamano].filter(Boolean).join(" · ");
+      return `<li>${escapeHtml(item.nombre_producto)} · ${escapeHtml(options)} × ${Number(item.cantidad)}</li>`;
+    }).join("");
+    const paymentLabel = data.pago_estado === "Aprobado" ? "Aprobado" : data.pago_metodo === "simulado" ? "Simulación (sin cobro real)" : "Transferencia pendiente de verificación";
+    result.innerHTML = `<article class="order-card">
+      <div class="order-card-header"><div><b>Pedido ${escapeHtml(data.codigo)}</b><time>${new Date(data.created_at).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" })}</time></div><span class="order-status">${escapeHtml(data.estado)}</span></div>
+      <ul class="order-items">${items}</ul>
+      <div class="order-card-footer"><span>Retiro: ${escapeHtml(data.punto_retiro)}</span><b>Total: ${money(data.total)}</b></div>
+      <p class="muted">Pago: ${escapeHtml(paymentLabel)}</p>
+      <p class="muted">Disponible para recoger desde: ${data.fecha_disponible ? new Date(data.fecha_disponible + "T12:00:00").toLocaleDateString("es-EC", { dateStyle: "long" }) : "Pendiente de registro"}</p>
+    </article>`;
+  } catch (error) {
+    console.error("Error consultando el pedido:", error.message);
+    result.innerHTML = '<p class="order-empty">No se pudo consultar el pedido en línea. Inténtalo de nuevo más tarde.</p>';
+  }
+}
+function renderReviews(reviews) {
+  if (!reviews?.length) return '<p class="muted">Aún no hay reseñas para este producto.</p>';
+  return reviews.map(review => {
+    const rating = Math.min(5, Math.max(1, Number(review.puntuacion) || 1));
+    const images = (review.images || []).map(url => `<img src="${escapeHtml(url)}" alt="Imagen adjunta a la reseña" loading="lazy">`).join("");
+    return `<div class="review-item"><b>${"★".repeat(rating)}${"☆".repeat(5 - rating)}</b><p>${escapeHtml(review.comentario)}</p><span class="muted">${new Date(review.created_at).toLocaleDateString("es-EC")}</span>${images ? `<div class="review-images">${images}</div>` : ""}</div>`;
+  }).join("");
+}
+async function loadReviews(productId) {
+  const list = document.getElementById("reviewsList");
+  if (!list || typeof supabaseClient === "undefined") return;
+  list.innerHTML = '<p class="muted" role="status">Cargando reseñas…</p>';
+  try {
+    const { data: reviews, error } = await supabaseClient.from("resenas")
+      .select("id, puntuacion, comentario, created_at").eq("producto_id", productId)
+      .order("created_at", { ascending: false }).limit(100);
+    if (error) throw error;
+    const ids = (reviews || []).map(review => review.id);
+    let imageRows = [];
+    if (ids.length) {
+      const { data, error: imageError } = await supabaseClient.from("resenas_imagenes")
+        .select("resena_id, storage_path").in("resena_id", ids);
+      if (imageError) throw imageError;
+      imageRows = data || [];
+    }
+    const hydrated = (reviews || []).map(review => ({
+      ...review,
+      images: imageRows.filter(row => row.resena_id === review.id)
+        .map(row => supabaseClient.storage.from("amigurumiland-resenas").getPublicUrl(row.storage_path).data.publicUrl)
+    }));
+    list.innerHTML = renderReviews(hydrated);
+  } catch (error) {
+    console.error("No se pudieron cargar las reseñas:", error.message);
+    list.innerHTML = '<p class="form-error" role="alert">No se pudieron cargar las reseñas desde la base de datos.</p>';
+  }
+}
+async function submitReview(id) {
+  if (!requireLogin()) return;
+  const user = currentUser();
+  const text = document.getElementById("reviewText");
+  const rating = document.getElementById("reviewRating");
+  const input = document.getElementById("reviewImagesInput");
+  const feedback = document.getElementById("reviewFeedback");
+  feedback.textContent = ""; clearFieldError(text);
+  if (!text.value.trim() || text.value.trim().length > 1000) { setFieldError(text, "Escribe una reseña de 1 a 1000 caracteres."); text.focus(); return; }
+  if (!["1", "2", "3", "4", "5"].includes(rating.value)) { setFieldError(rating, "Selecciona una calificación válida."); rating.focus(); return; }
+  const processedImages = await prepareReferenceImages(input);
+  if (processedImages === null) { input.focus(); return; }
+  if (typeof supabaseClient === "undefined") { feedback.textContent = "No está disponible la conexión con la base de datos."; return; }
+  const requestId = crypto.randomUUID();
+  const uploadedPaths = [];
+  let reviewId = null;
+  try {
+    for (let i = 0; i < processedImages.length; i++) {
+      const blob = await fetch(processedImages[i]).then(response => response.blob());
+      const path = `${user.id}/${requestId}/resena-${i + 1}.jpg`;
+      const { error: uploadError } = await supabaseClient.storage.from("amigurumiland-resenas")
+        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
+      if (uploadError) throw uploadError;
+      uploadedPaths.push(path);
+    }
+    const { data: review, error: reviewError } = await supabaseClient.from("resenas")
+      .insert({ usuario_id: user.id, producto_id: Number(id), puntuacion: Number(rating.value), comentario: text.value.trim() })
+      .select("id").single();
+    if (reviewError) throw reviewError;
+    reviewId = review.id;
+    if (uploadedPaths.length) {
+      const { error: rowsError } = await supabaseClient.from("resenas_imagenes")
+        .insert(uploadedPaths.map(storage_path => ({ resena_id: reviewId, storage_path })));
+      if (rowsError) throw rowsError;
+    }
+    text.value = ""; input.value = "";
+    clearReferencePreviews(document.getElementById("reviewImagePreview"));
+    feedback.textContent = "Reseña guardada y visible en el catálogo.";
+    await loadReviews(id);
+  } catch (error) {
+    console.error("No se pudo guardar la reseña:", error.message);
+    if (uploadedPaths.length) await supabaseClient.storage.from("amigurumiland-resenas").remove(uploadedPaths);
+    if (reviewId) await supabaseClient.from("resenas").delete().eq("id", reviewId).eq("usuario_id", user.id);
+    feedback.textContent = "No se pudo guardar la reseña en línea. Inténtalo de nuevo.";
+  }
+}
+
 function contactUrl(name) { return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola, quiero consultar sobre ${name} en Amigurumiland.`)}` }
 async function submitQuote() { if (!requireLogin()) return; const user = currentUser(); if (!user) return; const name = document.getElementById("quoteName"), email = document.getElementById("quoteEmail"), design = document.getElementById("quoteDesign"), size = document.getElementById("quoteSize"), colors = document.getElementById("quoteColors"), details = document.getElementById("quoteDetails"), input = document.getElementById("quoteImages"), feedback = document.getElementById("quoteFeedback"); name.value = user.nombre || ""; email.value = user.email || ""; feedback.textContent = "";[name, email, design, size, colors].forEach(clearFieldError); if (!isValidName(name.value)) { setFieldError(name, "Ingresa un nombre válido."); name.focus(); return } if (!isValidEmail(email.value.trim())) { setFieldError(email, "Ingresa un correo válido."); email.focus(); return } if (!design.value.trim() || design.value.trim().length > 1000) { setFieldError(design, "Describe tu idea (máximo 1000 caracteres)."); design.focus(); return } if (!["Pequeño (15 cm)", "Mediano (20 cm)", "Grande (30 cm)"].includes(size.value)) { setFieldError(size, "Selecciona un tamaño disponible."); size.focus(); return } if (!colors.value.trim() || colors.value.trim().length > 120) { setFieldError(colors, "Indica los colores (máximo 120 caracteres)."); colors.focus(); return } const images = await prepareReferenceImages(input); if (images === null) { input.focus(); return } const db = loadDB(); if (!db) { feedback.textContent = "No se pudo acceder al almacenamiento local."; return } db.COTIZACION = Array.isArray(db.COTIZACION) ? db.COTIZACION : []; db.COTIZACION.push({ id: `COT-${Date.now().toString().slice(-6)}`, usuario_id: user.id, nombre: user.nombre, email: user.email, diseno: design.value.trim(), tamano: size.value, colores: colors.value.trim(), detalles: details.value.trim(), imagenes: images, fecha: new Date().toISOString() }); if (!saveDB(db)) { feedback.textContent = "No se pudo guardar. Reduce el tamaño o la cantidad de imágenes."; return } document.querySelector("#quoteForm")?.reset(); clearReferencePreviews(document.getElementById("quoteImagePreview")); feedback.textContent = "Solicitud enviada correctamente." }
 function processPayment() {
