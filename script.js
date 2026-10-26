@@ -216,24 +216,118 @@ async function submitQuote() {
   if (!saveDB(db)) { feedback.textContent = "No se pudo guardar. Reduce el tamaño o la cantidad de imágenes."; return }
   document.querySelector("#quoteForm")?.reset(); clearReferencePreviews(document.getElementById("quoteImagePreview")); feedback.textContent = "Solicitud enviada correctamente.";
 }
-function processPayment() {
-  const data = getCheckout(), err = document.getElementById("paymentError"); if (!data) { location.href = "checkout-datos.html"; return } const payment = validatePayment(); if (!payment) return; const now = new Date(), orderId = "AM-" + Date.now().toString().slice(-6), db = loadDB(); if (!db) { err.textContent = "No fue posible guardar la simulación."; return }
-  const userId = "USR-" + Date.now().toString().slice(-6), payId = "PAY-" + Date.now().toString().slice(-6), detailIds = cart.map((_, i) => `DET-${Date.now().toString().slice(-6)}-${i + 1}`);
-  db.USUARIO.push({ id: userId, nombre: data.name, email: data.email }); db.DIRECCION.push({ id: "DIR-" + orderId, usuario_id: userId, punto_retiro: data.pickup });
-  db.USUARIO.push({ id: userId, nombre: data.name, email: data.email }); db.DIRECCION.push({ id: "DIR-" + orderId, usuario_id: userId, punto_retiro: data.pickup, direccion_facturacion: data.invoice.address, telefono: data.invoice.phone });
-  db.PEDIDO.push({ id: orderId, usuario_id: userId, fecha: now.toISOString(), estado: "Pendiente", total: totalCart(), punto_retiro: data.pickup, metodo_pago: document.querySelector("[name=payment]:checked").value });
-  db.PEDIDO.push({ id: orderId, usuario_id: userId, fecha: now.toISOString(), estado: payment.status === "approved" ? "Confirmado" : "Pendiente de pago", total: totalCart(), punto_retiro: data.pickup, metodo_pago: document.querySelector("[name=payment]:checked").value });
-  db.FACTURA = Array.isArray(db.FACTURA) ? db.FACTURA : []; db.FACTURA.push({ id: `FAC-${Date.now().toString().slice(-9)}`, pedido_id: orderId, nombre_razon_social: data.invoice.name, tipo_identificacion: data.invoice.idType, identificacion: data.invoice.idNumber, telefono: data.invoice.phone, direccion: data.invoice.address, email: data.email, total: totalCart(), estado: "Registrada", fecha: now.toISOString() });
-  cart.forEach((x, i) => { const p = products.find(p => p.id === x.id); db.DETALLE_PEDIDO.push({ id: detailIds[i], pedido_id: orderId, producto_id: p.id, cantidad: x.qty, color: x.color, tamano: x.size, precio_unitario: p.price + (x.extra || 0) }) });
-  db.PAGO.push({ id: payId, pedido_id: orderId, metodo: document.querySelector("[name=payment]:checked").value, estado: payment.status, referencia: payment.reference || "SIMULACION", fecha: now.toISOString() });
-  db.PAGO.push({ id: payId, pedido_id: orderId, metodo: document.querySelector("[name=payment]:checked").value, estado: payment.status, referencia: payment.reference || "Pago autorizado", fecha: now.toISOString() });
-  db.ENVIO.push({ id: "ENV-" + orderId, pedido_id: orderId, punto_retiro: data.pickup, estado: "Pendiente", fecha_disponible: new Date(now.getTime() + 7 * 86400000).toISOString() });
-  if (!saveDB(db)) { err.textContent = "No se pudo guardar la transacción."; return }
-  if (!saveDB(db)) { err.textContent = "No se pudo registrar el pago. Inténtalo nuevamente."; return }
-  const orderItems = cart.map(item => { const product = products.find(p => p.id === item.id); return { name: product.name, customization: customization(item), quantity: item.qty, unitPrice: product.price + (item.extra || 0), total: (product.price + (item.extra || 0)) * item.qty } });
-  sessionStorage.setItem("LAST_ORDER", JSON.stringify({ id: orderId, paymentStatus: payment.status, paymentMethod: document.querySelector("[name=payment]:checked").value, paymentReference: payment.reference || "Pago autorizado", total: totalCart(), pickup: data.pickup, customerName: data.name, email: data.email, invoice: data.invoice, items: orderItems }));
-  sessionStorage.setItem("LAST_ORDER", JSON.stringify({ id: orderId, paymentStatus: payment.status, paymentMethod: document.querySelector("[name=payment]:checked").value, total: totalCart() }));
-  cart = []; saveCart(); sessionStorage.removeItem(CHECKOUT_KEY); location.href = "confirmacion.html"
+async function processPayment() {
+  const data = getCheckout();
+  const err = document.getElementById("paymentError");
+  const button = document.querySelector('button[onclick="processPayment()"]');
+
+  if (!data) {
+    location.href = "checkout-datos.html";
+    return;
+  }
+  if (!requireLogin()) return;
+  if (typeof supabaseClient === "undefined") {
+    err.textContent = "No está disponible la conexión con la base de datos. Inténtalo más tarde.";
+    return;
+  }
+
+  const payment = validatePayment();
+  if (!payment) return;
+
+  if (!cart.length) {
+    err.textContent = "Tu carrito está vacío.";
+    return;
+  }
+
+  const pickupIds = {
+    "Centro Norte": 1,
+    "Centro Histórico": 2,
+    "Cumbayá": 3
+  };
+  const selectedPayment = document.querySelector("[name=payment]:checked")?.value;
+  const isTransfer = selectedPayment === "Transferencia bancaria";
+  const items = cart.map(item => ({
+    producto_id: Number(item.id),
+    cantidad: Number(item.qty),
+    color: item.color === "Original" ? null : String(item.color || "").slice(0, 80),
+    tamano: String(item.size || "")
+  }));
+
+  const invoice = {
+    nombre_razon_social: data.invoice.name,
+    tipo_identificacion: data.invoice.idType,
+    identificacion: data.invoice.idNumber,
+    telefono: data.invoice.phone,
+    direccion: data.invoice.address,
+    email: data.email
+  };
+
+  err.textContent = "";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Registrando pedido…";
+  }
+
+  try {
+    const { data: result, error } = await supabaseClient.rpc(
+      "finalizar_compra_transaccional",
+      {
+        p_items: items,
+        p_punto_retiro_id: pickupIds[data.pickup] || null,
+        p_factura: invoice,
+        p_metodo: isTransfer ? "transferencia" : "simulado",
+        p_referencia: isTransfer ? payment.reference : "SIMULACIÓN"
+      }
+    );
+
+    if (error) {
+      console.error("Error registrando el pedido en Supabase:", error.message);
+      err.textContent = error.message.includes("Stock insuficiente")
+        ? "Uno de los productos ya no tiene suficiente stock. Actualiza el carrito e inténtalo de nuevo."
+        : "No se pudo registrar el pedido en la base de datos. No se ha confirmado ninguna compra; inténtalo nuevamente.";
+      return;
+    }
+
+    const orderItems = cart.map(item => {
+      const product = products.find(p => p.id === item.id);
+      const unitPrice = Number(product.price) + (Number(item.extra) || 0);
+      return {
+        name: product.name,
+        customization: customization(item),
+        quantity: item.qty,
+        unitPrice,
+        total: unitPrice * item.qty
+      };
+    });
+
+    const order = {
+      id: result.codigo,
+      databaseId: result.pedido_id,
+      paymentStatus: "pending_verification",
+      paymentMethod: selectedPayment,
+      paymentReference: isTransfer ? payment.reference : "SIMULACIÓN",
+      total: Number(result.total),
+      pickup: data.pickup,
+      customerName: data.name,
+      email: data.email,
+      invoice: data.invoice,
+      items: orderItems
+    };
+
+    sessionStorage.setItem("LAST_ORDER", JSON.stringify(order));
+    cart = [];
+    saveCart();
+    sessionStorage.removeItem(CHECKOUT_KEY);
+    location.href = "confirmacion.html";
+  } catch (error) {
+    console.error("Error inesperado al registrar el pedido:", error);
+    err.textContent = "No se pudo conectar con Supabase. Revisa tu conexión e inténtalo nuevamente.";
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Confirmar pago";
+    }
+  }
 }
 function initPayment() { if (!getCheckout()) return location.href = "checkout-datos.html"; checkoutSummary("paymentSummary") }
 function initData() { if (!cart.length) return location.href = "carrito.html"; checkoutSummary("checkoutSummary") }
@@ -668,33 +762,75 @@ function initAccount() {
   });
 }
 
-function initMyOrders() {
+async function initMyOrders() {
   const box = document.getElementById("myOrders");
   if (!box) return;
 
   const user = currentUser();
   if (!user) return;
-
-  const db = authDB();
-  const orders = (db?.PEDIDO || [])
-    .filter(order => order.usuario_id === user.id)
-    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-  if (!orders.length) {
-    box.innerHTML = '<div class="lookup-card"><h2>Aún no tienes pedidos</h2><p class="muted">Cuando realices una compra, aparecerá aquí.</p><a class="btn dark" href="productos.html">Explorar productos</a></div>';
+  if (typeof supabaseClient === "undefined") {
+    box.innerHTML = '<p class="form-error" role="alert">No está disponible la conexión con la base de datos.</p>';
     return;
   }
 
-  box.innerHTML = orders.map(order => {
-    const details = (db.DETALLE_PEDIDO || []).filter(detail => detail.pedido_id === order.id);
-    const payment = (db.PAGO || []).find(entry => entry.pedido_id === order.id);
-    const items = details.map(detail => {
-      const product = products.find(item => item.id === detail.producto_id);
-      return `<li>${escapeHtml(product?.name || "Producto")} · ${escapeHtml(detail.tamano || "")} · ${detail.cantidad} unidad(es)</li>`;
-    }).join("");
+  box.innerHTML = '<p class="muted" role="status">Cargando tus pedidos…</p>';
 
-    return `<article class="order-card"><div class="order-card-header"><div><b>Pedido ${escapeHtml(order.id)}</b><time>${new Date(order.fecha).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" })}</time></div><span class="order-status">${escapeHtml(order.estado || "Registrado")}</span></div><ul class="order-items">${items}</ul><div class="order-card-footer"><span>Retiro: ${escapeHtml(order.punto_retiro || "Por coordinar")}<br><span class="muted">Pago: ${payment?.estado === "approved" ? "Aprobado" : "Pendiente de verificación"}</span></span><b>${money(order.total)}</b></div></article>`;
-  }).join("");
+  try {
+    const { data: orders, error } = await supabaseClient
+      .from("pedidos")
+      .select("id, codigo, estado, total, punto_retiro_id, created_at")
+      .eq("usuario_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    if (!orders?.length) {
+      box.innerHTML = '<div class="lookup-card"><h2>Aún no tienes pedidos</h2><p class="muted">Cuando realices una compra, aparecerá aquí.</p><a class="btn dark" href="productos.html">Explorar productos</a></div>';
+      return;
+    }
+
+    const ids = orders.map(order => order.id);
+    const [{ data: details, error: detailError }, { data: payments, error: paymentError }] = await Promise.all([
+      supabaseClient.from("detalle_pedido")
+        .select("pedido_id, nombre_producto, cantidad, color, tamano, precio_unitario, subtotal")
+        .in("pedido_id", ids),
+      supabaseClient.from("pagos")
+        .select("pedido_id, metodo, estado, es_simulacion")
+        .in("pedido_id", ids)
+    ]);
+
+    if (detailError) throw detailError;
+    if (paymentError) throw paymentError;
+
+    const pickupNames = { 1: "Centro Norte", 2: "Centro Histórico", 3: "Cumbayá" };
+    box.innerHTML = orders.map(order => {
+      const orderDetails = (details || []).filter(detail => detail.pedido_id === order.id);
+      const payment = (payments || []).find(entry => entry.pedido_id === order.id);
+      const items = orderDetails.map(detail => {
+        const options = [detail.color, detail.tamano].filter(Boolean).join(" · ");
+        return `<li>${escapeHtml(detail.nombre_producto)} · ${escapeHtml(options)} × ${detail.cantidad}</li>`;
+      }).join("");
+      const paymentLabel = !payment
+        ? "Pendiente de verificación"
+        : payment.estado === "Aprobado"
+          ? (payment.es_simulacion ? "Simulación (sin cobro real)" : "Aprobado")
+          : payment.metodo === "transferencia"
+            ? "Transferencia pendiente de verificación"
+            : "Pago simulado; sin cobro real";
+
+      return `<article class="order-card">
+        <div class="order-card-header">
+          <div><b>Pedido ${escapeHtml(order.codigo)}</b><time>${new Date(order.created_at).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" })}</time></div>
+          <span class="order-status">${escapeHtml(order.estado)}</span>
+        </div>
+        <ul class="order-items">${items}</ul>
+        <div class="order-card-footer"><span>Retiro: ${escapeHtml(pickupNames[order.punto_retiro_id] || "Por coordinar")}<br><span class="muted">Pago: ${escapeHtml(paymentLabel)}</span></span><b>${money(order.total)}</b></div>
+      </article>`;
+    }).join("");
+  } catch (error) {
+    console.error("No se pudieron cargar los pedidos:", error.message);
+    box.innerHTML = '<p class="form-error" role="alert">No se pudieron cargar tus pedidos desde Supabase. Recarga la página o inténtalo más tarde.</p>';
+  }
 }
 
 /* Inicializa las funciones de cuenta solo después de recuperar la sesión. */
