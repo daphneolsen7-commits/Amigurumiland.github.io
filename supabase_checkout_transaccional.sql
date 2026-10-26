@@ -105,22 +105,7 @@ begin
     end if;
   end loop;
 
-  -- El suplemento por tamaño se calcula aquí, no se acepta un precio del navegador.
-  select coalesce(sum(
-    p.precio +
-    case x.item->>'tamano'
-      when 'Mediano (20 cm)' then 3
-      when 'Grande (30 cm)' then 6
-      else 0
-    end
-    * (x.item->>'cantidad')::integer
-  ), 0)
-  into v_subtotal
-  from jsonb_array_elements(p_items) as x(item)
-  join public.productos p
-    on p.id = (x.item->>'producto_id')::integer and p.activo = true;
-
-  -- Recalcular correctamente: precio unitario (base + suplemento) por cantidad.
+  -- El total usa el precio base de la base de datos más el suplemento de tamaño.
   select coalesce(sum((
     p.precio +
     case x.item->>'tamano'
