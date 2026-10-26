@@ -42,7 +42,8 @@
                     <div id="paymentError" class="form-error" role="alert"></div>
                     <div class="payment-methods" role="radiogroup" aria-label="Selecciona un método de pago">
                         <label class="radio-card payment-choice"><input type="radio" name="payment" value="Tarjeta" checked onchange="updatePaymentFields()"><span><b>Tarjeta de crédito o débito</b><small>Visa · Mastercard · American Express</small></span><span class="payment-brand" aria-hidden="true">VISA</span></label>
-                        <label class="radio-card payment-choice"><input type="radio" name="payment" value="PayPal" onchange="updatePaymentFields()"><span><b>PayPal</b><small>Paga con tu cuenta PayPal</small></span><span class="paypal-wordmark" aria-hidden="true">PayPal</span></label>
+                        <label class="radio-card payment-choice"><input type="radio" name="payment" value="Transferencia bancaria" onchange="updatePaymentFields()"><span><b>Transferencia bancaria</b><small>Registro de transferencia de demostración</small></span><span aria-hidden="true">🏦</span></label>
+                        <label class="radio-card payment-choice"><input type="radio" name="payment" value="PayPal" onchange="updatePaymentFields()"><span><b>PayPal</b><small>Flujo de demostración, sin conexión real</small></span><span class="paypal-wordmark" aria-hidden="true">PayPal</span></label>
                     </div>
                     <div id="cardPaymentFields" class="payment-fields">
                         <h2>Información de la tarjeta</h2>
@@ -54,7 +55,7 @@
                         </div>
                         <p class="payment-footnote" id="cardDemoNote">Vista de demostración: utiliza únicamente datos ficticios. No introduzcas información de una tarjeta real.</p>
                     </div>
-                    <div id="transferPaymentFields" class="payment-fields" hidden></div>
+                    <div id="transferPaymentFields" class="payment-fields" hidden><div class="paypal-panel"><h2>Transferencia bancaria de prueba</h2><p>Esta opción registra una referencia ficticia. No se muestran datos bancarios ni se verifica una transferencia real.</p></div></div>
                     <div id="paypalPaymentFields" class="payment-fields" hidden>
                         <div class="paypal-panel"><span class="paypal-wordmark">PayPal</span><h2>Continuar con PayPal</h2><p>Seleccionaste PayPal para completar tu compra. En esta versión se mostrará el flujo de prueba de la tienda.</p><p class="payment-footnote">No se abrirá una sesión real de PayPal ni se efectuará un cobro.</p></div>
                     </div>
