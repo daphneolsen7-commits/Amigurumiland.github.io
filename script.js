@@ -221,7 +221,7 @@ function validatePayment() {
   [name, number, expiry, cvv].forEach(clearFieldError);
   if (!isValidName(name.value)) { setFieldError(name, "Escribe el nombre del titular."); name.focus(); return null; }
   const digits = number.value.replace(/\D/g, "");
-  if (!/^\d{16}$/.test(digits)) { setFieldError(number, "Introduce los 16 dígitos de una tarjeta de prueba."); number.focus(); return null; }
+  if (!isValidCardNumber(digits)) { setFieldError(number, "Introduce una tarjeta de prueba válida de 16 dígitos (sin usar datos reales)."); number.focus(); return null; }
   if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry.value.trim())) { setFieldError(expiry, "Usa el formato MM/AA."); expiry.focus(); return null; }
   const parts = expiry.value.trim().split("/");
   const month = Number(parts[0]), year = 2000 + Number(parts[1]), now = new Date();
