@@ -42,8 +42,8 @@
                     <div id="paymentError" class="form-error" role="alert"></div>
                     <div class="payment-methods" role="radiogroup" aria-label="Selecciona un método de pago">
                         <label class="radio-card payment-choice"><input type="radio" name="payment" value="Tarjeta" checked onchange="updatePaymentFields()"><span><b>Tarjeta de crédito o débito</b><small>Visa · Mastercard · American Express</small></span><span class="payment-brand" aria-hidden="true">VISA</span></label>
-                        <label class="radio-card payment-choice"><input type="radio" name="payment" value="Transferencia bancaria" onchange="updatePaymentFields()"><span><b>Transferencia bancaria</b><small>Registro de transferencia de demostración</small></span><span aria-hidden="true">🏦</span></label>
-                        <label class="radio-card payment-choice"><input type="radio" name="payment" value="PayPal" onchange="updatePaymentFields()"><span><b>PayPal</b><small>Flujo de demostración, sin conexión real</small></span><span class="paypal-wordmark" aria-hidden="true">PayPal</span></label>
+                        <label class="radio-card payment-choice"><input type="radio" name="payment" value="Transferencia bancaria" onchange="updatePaymentFields()"><span><b>Transferencia bancaria</b><small>Registro de transferencia</small></span><span aria-hidden="true">🏦</span></label>
+                        <label class="radio-card payment-choice"><input type="radio" name="payment" value="PayPal" onchange="updatePaymentFields()"><span><b>PayPal</b></span><span class="paypal-wordmark" aria-hidden="true">PayPal</span></label>
                     </div>
                     <div id="cardPaymentFields" class="payment-fields">
                         <h2>Información de la tarjeta</h2>
@@ -56,20 +56,19 @@
                         <p class="payment-footnote" id="cardDemoNote">Vista de demostración: utiliza únicamente datos ficticios. No introduzcas información de una tarjeta real.</p>
                     </div>
                     <div id="transferPaymentFields" class="payment-fields" hidden>
-                        <div class="paypal-panel"><h2>Transferencia bancaria de prueba</h2><p>Completa estos datos ficticios para simular que realizaste una transferencia. No se consulta ningún banco ni se verifica dinero real.</p></div>
-                        <label>Nombre de quien transfiere<input class="field" id="transferHolder" autocomplete="off" maxlength="80" placeholder="Nombre ficticio"></label>
+                        <div class="paypal-panel"><h2>Transferencia bancaria de prueba</h2><p>Completa estos datos: </p></div>
+                        <label>Nombre de quien transfiere<input class="field" id="transferHolder" autocomplete="off" maxlength="80" placeholder="Nombre"></label>
                         <label>Referencia de transferencia<input class="field" id="transferReference" autocomplete="off" maxlength="30" placeholder="Ej. TRANSFER-DEMO-123"></label>
                         <label>Fecha de transferencia<input class="field" id="transferDate" type="date"></label>
                         <p class="payment-footnote">Usa únicamente datos inventados. No ingreses números de cuenta reales.</p>
                     </div>
                     <div id="paypalPaymentFields" class="payment-fields" hidden>
-                        <div class="paypal-panel"><span class="paypal-wordmark">PayPal</span><h2>Simulación de PayPal</h2><p>Ingresa un nombre y correo ficticios para continuar con el flujo de demostración.</p></div>
-                        <label>Nombre de la cuenta de prueba<input class="field" id="paypalName" autocomplete="off" maxlength="80" placeholder="Nombre ficticio"></label>
-                        <label>Correo de la cuenta de prueba<input class="field" id="paypalEmail" type="email" autocomplete="off" maxlength="254" placeholder="demo@example.com"></label>
-                        <p class="payment-footnote">No se abrirá una sesión real de PayPal ni se efectuará un cobro. Nunca ingreses tu contraseña.</p>
+                        <div class="paypal-panel"><span class="paypal-wordmark">PayPal</span><h2>PayPal</h2><p>Ingresa un nombre y corre.</p></div>
+                        <label>Nombre de la cuenta<input class="field" id="paypalName" autocomplete="off" maxlength="80" placeholder="Nombre ficticio"></label>
+                        <label>Correo de la cuenta<input class="field" id="paypalEmail" type="email" autocomplete="off" maxlength="254" placeholder="demo@example.com"></label>
                     </div>
                     <button class="btn dark full payment-submit" type="button" onclick="processPayment()">Pagar ahora</button>
-                    <p class="payment-footnote payment-security"><span aria-hidden="true">▣</span> Revisa tu pedido antes de confirmar</p>
+                    <p class="payment-footnote payment-security"><span aria-hidden="true"></span> Revisa tu pedido antes de confirmar</p>
                 </div>
                 <div class="summary-box">
                     <h2>Resumen de tu pedido</h2>
