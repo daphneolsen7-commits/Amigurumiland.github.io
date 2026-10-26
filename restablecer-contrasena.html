@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Amigurumiland | Nueva contraseña</title>
+  <link rel="icon" type="image/png" href="assets/Logo.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+  <header class="nav">
+    <a class="brand" href="index.html"><img src="assets/Logo.png" alt=""><span>Amigurumiland</span> ♡</a>
+    <nav class="site-nav" aria-label="Navegación principal"><a href="index.html">Inicio</a><a href="login.html">Iniciar sesión</a></nav>
+  </header>
+  <main id="main-content" class="container">
+    <section class="section checkout-page">
+      <div class="form-card auth-card">
+        <p class="eyebrow">CASI LISTO</p>
+        <h1>Crear contraseña nueva</h1>
+        <p class="muted">Usa al menos 8 caracteres. No reutilices una contraseña que uses en otros sitios.</p>
+        <form id="resetPasswordForm" class="auth-form">
+          <label for="newPassword">Nueva contraseña</label>
+          <input class="field" id="newPassword" type="password" autocomplete="new-password" minlength="8" required>
+          <label for="confirmPassword">Repite la contraseña</label>
+          <input class="field" id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+          <p id="resetPasswordFeedback" class="form-success" role="status" aria-live="polite">Validando el enlace de recuperación…</p>
+          <button class="btn dark full" type="submit">Guardar nueva contraseña</button>
+        </form>
+        <p><a class="text-link inline-link" href="recuperar-contrasena.html">Solicitar otro enlace</a></p>
+      </div>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
