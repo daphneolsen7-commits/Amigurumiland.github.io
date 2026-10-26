@@ -1,5 +1,6 @@
 -- Amigurumiland: checkout atómico (pedido + detalles + factura + pago + envío + stock)
 -- Ejecutar una sola vez en Supabase > SQL Editor. No requiere claves privadas.
+-- Esta versión incorpora validación explícita del método de pago y entradas numéricas.
 
 create or replace function public.finalizar_compra_transaccional(
   p_items jsonb,
@@ -20,34 +21,46 @@ declare
   v_subtotal numeric(10,2) := 0;
   v_item record;
   v_producto public.productos%rowtype;
-  v_cantidad integer;
   v_lineas integer;
   v_metodo text;
   v_referencia text;
 begin
+  -- 1. Verificar sesión
   v_usuario_id := auth.uid();
   if v_usuario_id is null then
     raise exception 'Debes iniciar sesión para realizar una compra.' using errcode = '28000';
   end if;
 
-  if p_items is null or jsonb_typeof(p_items) <> 'array'
-     or jsonb_array_length(p_items) = 0 or jsonb_array_length(p_items) > 50 then
+  -- 2. Validar estructura y tamaño del carrito
+  if p_items is null or jsonb_typeof(p_items) <> 'array' then
     raise exception 'El carrito está vacío o supera el máximo de 50 líneas.' using errcode = '22023';
   end if;
 
+  if jsonb_array_length(p_items) = 0 or jsonb_array_length(p_items) > 50 then
+    raise exception 'El carrito está vacío o supera el máximo de 50 líneas.' using errcode = '22023';
+  end if;
+
+  -- 3. Validar los datos de cada artículo
   if exists (
     select 1
     from jsonb_array_elements(p_items) as x(item)
     where jsonb_typeof(x.item) <> 'object'
-       or coalesce(x.item->>'producto_id','') !~ '^[0-9]+$'
-       or coalesce(x.item->>'cantidad','') !~ '^[0-9]+$'
-       or (x.item->>'cantidad')::integer not between 1 and 99
-       or coalesce(x.item->>'tamano','') not in ('Pequeño (15 cm)', 'Mediano (20 cm)', 'Grande (30 cm)')
-       or char_length(coalesce(x.item->>'color','')) > 80
+       or coalesce(x.item->>'producto_id', '') !~ '^[0-9]{1,10}$'
+       or case
+            when coalesce(x.item->>'producto_id', '') ~ '^[0-9]{1,10}$'
+            then (x.item->>'producto_id')::numeric not between 1 and 2147483647
+            else true
+          end
+       or coalesce(x.item->>'cantidad', '') !~ '^[1-9][0-9]?$'
+       or coalesce(x.item->>'tamano', '') not in (
+         'Pequeño (15 cm)', 'Mediano (20 cm)', 'Grande (30 cm)'
+       )
+       or char_length(coalesce(x.item->>'color', '')) > 80
   ) then
     raise exception 'Hay artículos con datos inválidos.' using errcode = '22023';
   end if;
 
+  -- 4. Limitar la cantidad total de cada producto
   if exists (
     select 1
     from (
@@ -55,11 +68,13 @@ begin
              sum((x.item->>'cantidad')::integer)::integer as cantidad
       from jsonb_array_elements(p_items) as x(item)
       group by (x.item->>'producto_id')::integer
-    ) q where q.cantidad > 99
+    ) q
+    where q.cantidad > 99
   ) then
     raise exception 'La cantidad total de un producto no puede superar 99.' using errcode = '22023';
   end if;
 
+  -- 5. Verificar punto de retiro activo
   if p_punto_retiro_id is null or not exists (
     select 1 from public.puntos_retiro pr
     where pr.id = p_punto_retiro_id and pr.activo = true
@@ -67,23 +82,25 @@ begin
     raise exception 'El punto de retiro no está disponible.' using errcode = '22023';
   end if;
 
+  -- 6. Validar datos de facturación
   if p_factura is null or jsonb_typeof(p_factura) <> 'object'
-     or coalesce(length(trim(p_factura->>'nombre_razon_social')),0) not between 2 and 160
-     or coalesce(p_factura->>'tipo_identificacion','') not in ('cedula','ruc')
-     or coalesce(length(trim(p_factura->>'identificacion')),0) not between 10 and 13
-     or coalesce(length(trim(p_factura->>'telefono')),0) not between 7 and 20
-     or coalesce(length(trim(p_factura->>'direccion')),0) not between 8 and 160
-     or coalesce(length(trim(p_factura->>'email')),0) not between 3 and 254 then
+     or coalesce(length(trim(p_factura->>'nombre_razon_social')), 0) not between 2 and 160
+     or coalesce(p_factura->>'tipo_identificacion', '') not in ('cedula', 'ruc')
+     or coalesce(length(trim(p_factura->>'identificacion')), 0) not between 10 and 13
+     or coalesce(length(trim(p_factura->>'telefono')), 0) not between 7 and 20
+     or coalesce(length(trim(p_factura->>'direccion')), 0) not between 8 and 160
+     or coalesce(length(trim(p_factura->>'email')), 0) not between 3 and 254 then
     raise exception 'Los datos de facturación están incompletos o no son válidos.' using errcode = '22023';
   end if;
 
-  if p_metodo not in ('transferencia','simulado') then
+  -- 7. Validar explícitamente el método de pago
+  if p_metodo is null or p_metodo not in ('transferencia', 'simulado') then
     raise exception 'El método de pago no está permitido.' using errcode = '22023';
   end if;
   v_metodo := p_metodo;
-  v_referencia := left(coalesce(nullif(trim(p_referencia),''), 'SIMULACIÓN'), 100);
+  v_referencia := left(coalesce(nullif(trim(p_referencia), ''), 'SIMULACIÓN'), 100);
 
-  -- Bloquear productos en orden determinista y comprobar existencias.
+  -- 8. Bloquear productos en orden determinista y comprobar existencias
   for v_item in
     select (x.item->>'producto_id')::integer as producto_id,
            sum((x.item->>'cantidad')::integer)::integer as cantidad
@@ -105,7 +122,8 @@ begin
     end if;
   end loop;
 
-  -- El total usa el precio base de la base de datos más el suplemento de tamaño.
+  -- 9. Calcular subtotal usando precios de la base de datos
+  -- Suplemento de tamaño: mediano +3, grande +6
   select coalesce(sum((
     p.precio +
     case x.item->>'tamano'
@@ -124,10 +142,17 @@ begin
   end if;
 
   v_lineas := jsonb_array_length(p_items);
-  insert into public.pedidos (usuario_id, punto_retiro_id, estado, subtotal, total, notas)
-  values (v_usuario_id, p_punto_retiro_id, 'Pendiente de pago', v_subtotal, v_subtotal, null)
+
+  -- 10. Crear pedido
+  insert into public.pedidos (
+    usuario_id, punto_retiro_id, estado, subtotal, total, notas
+  )
+  values (
+    v_usuario_id, p_punto_retiro_id, 'Pendiente de pago', v_subtotal, v_subtotal, null
+  )
   returning id, codigo into v_pedido_id, v_codigo;
 
+  -- 11. Guardar detalle del pedido
   insert into public.detalle_pedido (
     pedido_id, producto_id, nombre_producto, cantidad, color, tamano, precio_unitario
   )
@@ -136,7 +161,7 @@ begin
     p.id,
     p.nombre,
     (x.item->>'cantidad')::integer,
-    nullif(left(coalesce(x.item->>'color',''),80),''),
+    nullif(left(coalesce(x.item->>'color', ''), 80), ''),
     x.item->>'tamano',
     p.precio + case x.item->>'tamano'
       when 'Mediano (20 cm)' then 3
@@ -147,6 +172,7 @@ begin
   join public.productos p
     on p.id = (x.item->>'producto_id')::integer and p.activo = true;
 
+  -- 12. Descontar inventario
   update public.productos p
   set stock = p.stock - i.cantidad,
       updated_at = now()
@@ -158,31 +184,34 @@ begin
   ) i
   where p.id = i.producto_id;
 
+  -- 13. Registrar factura
   insert into public.facturas (
     pedido_id, nombre_razon_social, tipo_identificacion, identificacion,
     telefono, direccion, email, total, estado
   ) values (
     v_pedido_id,
-    left(trim(p_factura->>'nombre_razon_social'),160),
+    left(trim(p_factura->>'nombre_razon_social'), 160),
     p_factura->>'tipo_identificacion',
     trim(p_factura->>'identificacion'),
     trim(p_factura->>'telefono'),
-    left(trim(p_factura->>'direccion'),160),
+    left(trim(p_factura->>'direccion'), 160),
     lower(trim(p_factura->>'email')),
     v_subtotal,
     'Registrada'
   );
 
-  -- La web no procesa cobros reales: todos los pagos comienzan pendientes.
+  -- 14. Registrar pago pendiente y simulado; no se cobra dinero real
   insert into public.pagos (
     pedido_id, metodo, estado, referencia, importe, es_simulacion
   ) values (
     v_pedido_id, v_metodo, 'Pendiente', v_referencia, v_subtotal, true
   );
 
+  -- 15. Registrar envío
   insert into public.envios (pedido_id, estado, fecha_disponible)
   values (v_pedido_id, 'Pendiente', current_date + 7);
 
+  -- 16. Devolver confirmación
   return jsonb_build_object(
     'pedido_id', v_pedido_id,
     'codigo', v_codigo,
