@@ -598,7 +598,6 @@ async function submitReview(id) {
 }
 
 function contactUrl(name) { return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola, quiero consultar sobre ${name} en Amigurumiland.`)}` }
-async function submitQuote() { if (!requireLogin()) return; const user = currentUser(); if (!user) return; const name = document.getElementById("quoteName"), email = document.getElementById("quoteEmail"), design = document.getElementById("quoteDesign"), size = document.getElementById("quoteSize"), colors = document.getElementById("quoteColors"), details = document.getElementById("quoteDetails"), input = document.getElementById("quoteImages"), feedback = document.getElementById("quoteFeedback"); name.value = user.nombre || ""; email.value = user.email || ""; feedback.textContent = "";[name, email, design, size, colors].forEach(clearFieldError); if (!isValidName(name.value)) { setFieldError(name, "Ingresa un nombre válido."); name.focus(); return } if (!isValidEmail(email.value.trim())) { setFieldError(email, "Ingresa un correo válido."); email.focus(); return } if (!design.value.trim() || design.value.trim().length > 1000) { setFieldError(design, "Describe tu idea (máximo 1000 caracteres)."); design.focus(); return } if (!["Pequeño (15 cm)", "Mediano (20 cm)", "Grande (30 cm)"].includes(size.value)) { setFieldError(size, "Selecciona un tamaño disponible."); size.focus(); return } if (!colors.value.trim() || colors.value.trim().length > 120) { setFieldError(colors, "Indica los colores (máximo 120 caracteres)."); colors.focus(); return } const images = await prepareReferenceImages(input); if (images === null) { input.focus(); return } const db = loadDB(); if (!db) { feedback.textContent = "No se pudo acceder al almacenamiento local."; return } db.COTIZACION = Array.isArray(db.COTIZACION) ? db.COTIZACION : []; db.COTIZACION.push({ id: `COT-${Date.now().toString().slice(-6)}`, usuario_id: user.id, nombre: user.nombre, email: user.email, diseno: design.value.trim(), tamano: size.value, colores: colors.value.trim(), detalles: details.value.trim(), imagenes: images, fecha: new Date().toISOString() }); if (!saveDB(db)) { feedback.textContent = "No se pudo guardar. Reduce el tamaño o la cantidad de imágenes."; return } document.querySelector("#quoteForm")?.reset(); clearReferencePreviews(document.getElementById("quoteImagePreview")); feedback.textContent = "Solicitud enviada correctamente." }
 function initConfirmation() {
   let order;
   try { order = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null") } catch { order = null }
@@ -1173,13 +1172,10 @@ async function initMyOrders() {
         const options = [detail.color, detail.tamano].filter(Boolean).join(" · ");
         return `<li>${escapeHtml(detail.nombre_producto)} · ${escapeHtml(options)} × ${detail.cantidad}</li>`;
       }).join("");
-      const paymentLabel = !payment
-        ? "Pendiente de verificación"
-        : payment.estado === "Aprobado"
-          ? (payment.es_simulacion ? "Simulación (sin cobro real)" : "Aprobado")
-          : payment.metodo === "transferencia"
-            ? "Transferencia pendiente de verificación"
-            : "Pago simulado; sin cobro real";
+      const paymentMethods = { tarjeta: "Tarjeta", transferencia: "Transferencia", paypal: "PayPal", simulado: "Pago simulado" };
+      const paymentLabel = payment
+        ? (paymentMethods[String(payment.metodo || "").toLowerCase()] || "Método no especificado")
+        : "Pendiente de registro";
 
       return `<article class="order-card">
         <div class="order-card-header">
