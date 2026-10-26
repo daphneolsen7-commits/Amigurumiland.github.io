@@ -1173,3 +1173,15 @@ footer {
 .form-success[hidden] {
     display: none;
 }
+
+/* Checkout de pago: métodos visuales y formulario adaptable */
+.payment-choice { position: relative; min-height: 76px; }
+.payment-choice > span:first-of-type { flex: 1; }
+.payment-brand { color: #173b83; font-weight: 900; font-style: italic; letter-spacing: -.06em; font-size: 17px; }
+.paypal-wordmark { color: #164b9b; font-size: 20px; font-weight: 800; font-style: italic; letter-spacing: -.06em; }
+.payment-fields h2 { margin-top: 4px; }
+.payment-footnote { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.paypal-panel { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.paypal-panel h2, .paypal-panel p { margin: 0; }
+.payment-submit { margin-top: 4px; }
+.payment-security { text-align: center; margin-top: 12px; }
