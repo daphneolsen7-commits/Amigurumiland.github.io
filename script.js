@@ -212,6 +212,8 @@ function validatePayment() {
   const err = document.getElementById("paymentError");
   err.textContent = "";
   if (method === "PayPal") return { status: "pending_verification", reference: "DEMO-PAYPAL" };
+  if (method === "Transferencia bancaria") return { status: "pending_verification", reference: "DEMO-TRANSFERENCIA" };
+  if (method !== "Tarjeta") { err.textContent = "Selecciona un método de pago válido."; return null; }
   const name = document.getElementById("cardholderName");
   const number = document.getElementById("cardNumber");
   const expiry = document.getElementById("cardExpiry");
@@ -307,7 +309,16 @@ async function processPayment() {
     "Cumbayá": 3
   };
   const selectedPayment = document.querySelector("[name=payment]:checked")?.value;
-  const isTransfer = false;
+  const paymentMethods = {
+    "Tarjeta": "tarjeta",
+    "Transferencia bancaria": "transferencia",
+    "PayPal": "paypal"
+  };
+  const databasePaymentMethod = paymentMethods[selectedPayment];
+  if (!databasePaymentMethod) {
+    err.textContent = "Selecciona un método de pago válido.";
+    return;
+  }
   const items = cart.map(item => ({
     producto_id: Number(item.id),
     cantidad: Number(item.qty),
@@ -337,7 +348,7 @@ async function processPayment() {
         p_items: items,
         p_punto_retiro_id: pickupIds[data.pickup] || null,
         p_factura: invoice,
-        p_metodo: "simulado",
+        p_metodo: databasePaymentMethod,
         p_referencia: payment.reference
       }
     );
