@@ -65,24 +65,11 @@
       const state=$(`[data-shipment="${orderId}"]`,box).value;
       button.disabled=true;
       try {
-        const {data:rows,error:readError}=await db().from("envios").select("pedido_id").eq("pedido_id",orderId).limit(1);
-        if(readError)throw readError;
-        if(!rows?.length)throw new Error("No se encontró el registro de envío.");
-        const {error}=await db().from("envios").update({estado:state}).eq("pedido_id",orderId);
+        const {error}=await db().rpc("actualizar_estado_retiro_administrativo",{
+          p_pedido_id: orderId,
+          p_estado: state
+        });
         if(error)throw error;
-
-        // Mantiene sincronizado el estado visible del pedido con el avance del retiro.
-        // La aprobación del pago sigue siendo un proceso separado y no se simula aquí.
-        const orderStates = {
-          "Pendiente": "Pendiente de pago",
-          "Preparación": "En preparación",
-          "Listo para retiro": "Listo para retiro",
-          "Entregado": "Entregado",
-          "Cancelado": "Cancelado"
-        };
-        const {error:orderError}=await db().from("pedidos")
-          .update({estado:orderStates[state]}).eq("id",orderId);
-        if(orderError)throw orderError;
         say("Estado de retiro y pedido actualizado."); await loadOrders();
       } catch(error){say("No se pudo actualizar el retiro: "+error.message,true);button.disabled=false;}
     }));
