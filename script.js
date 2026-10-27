@@ -729,6 +729,32 @@ function updateAccountNav() {
   const user = currentUser();
   link.href = user ? "cuenta.html" : "login.html";
   link.textContent = user ? "Mi cuenta" : "Iniciar sesión";
+
+  // El enlace administrativo solo aparece si Supabase confirma el rol en la base de datos.
+  let adminLink = document.getElementById("adminAccountNav");
+  if (!user || typeof supabaseClient === "undefined") {
+    adminLink?.remove();
+    return;
+  }
+  if (!adminLink) {
+    adminLink = document.createElement("a");
+    adminLink.id = "adminAccountNav";
+    adminLink.href = "admin.html";
+    adminLink.textContent = "Panel administrativo";
+    link.insertAdjacentElement("afterend", adminLink);
+  }
+  if (adminLink.dataset.checking === "true" || adminLink.dataset.checkedUser === user.id) return;
+  adminLink.dataset.checking = "true";
+  supabaseClient.rpc("es_administrador").then(({ data, error }) => {
+    if (error || data !== true || !currentUser() || currentUser().id !== user.id) {
+      adminLink.remove();
+      return;
+    }
+    adminLink.dataset.checkedUser = user.id;
+    adminLink.hidden = false;
+  }).catch(() => adminLink.remove()).finally(() => {
+    adminLink.dataset.checking = "false";
+  });
 }
 
 async function logout() {
