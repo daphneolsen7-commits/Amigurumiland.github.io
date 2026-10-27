@@ -49,7 +49,7 @@
         <div class="admin-actions">
           ${approve?`<button class="btn dark" data-approve="${escape(payment.id)}">Aprobar transferencia verificada</button>`:""}
           ${shipment?`<select class="field" aria-label="Estado de retiro para ${escape(order.codigo)}" data-shipment="${escape(order.id)}">
-            ${(shipment.estado === "Cancelado" ? ["Cancelado"] : ["Pendiente","Preparación","Listo para retiro","Entregado"]).map(s=>`<option ${shipment.estado===s?"selected":""}>${s}</option>`).join("")}
+            ${["Pendiente","Preparación","Listo para retiro","Entregado","Cancelado"].map(s=>`<option ${shipment.estado===s?"selected":""}>${s}</option>`).join("")}
           </select><button class="btn light" data-save-shipment="${escape(order.id)}">Guardar estado</button>`:""}
         </div>
       </article>`;
@@ -70,7 +70,20 @@
         if(!rows?.length)throw new Error("No se encontró el registro de envío.");
         const {error}=await db().from("envios").update({estado:state}).eq("pedido_id",orderId);
         if(error)throw error;
-        say("Estado de retiro actualizado."); await loadOrders();
+
+        // Mantiene sincronizado el estado visible del pedido con el avance del retiro.
+        // La aprobación del pago sigue siendo un proceso separado y no se simula aquí.
+        const orderStates = {
+          "Pendiente": "Pendiente de pago",
+          "Preparación": "En preparación",
+          "Listo para retiro": "Listo para retiro",
+          "Entregado": "Entregado",
+          "Cancelado": "Cancelado"
+        };
+        const {error:orderError}=await db().from("pedidos")
+          .update({estado:orderStates[state]}).eq("id",orderId);
+        if(orderError)throw orderError;
+        say("Estado de retiro y pedido actualizado."); await loadOrders();
       } catch(error){say("No se pudo actualizar el retiro: "+error.message,true);button.disabled=false;}
     }));
   }
