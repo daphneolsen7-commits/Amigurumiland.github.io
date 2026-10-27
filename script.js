@@ -741,6 +741,7 @@ function updateAccountNav() {
     adminLink.id = "adminAccountNav";
     adminLink.href = "admin.html";
     adminLink.textContent = "Panel administrativo";
+    adminLink.hidden = true;
     link.insertAdjacentElement("afterend", adminLink);
   }
   if (adminLink.dataset.checking === "true" || adminLink.dataset.checkedUser === user.id) return;
