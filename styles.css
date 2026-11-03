@@ -1185,3 +1185,25 @@ footer {
 .paypal-panel h2, .paypal-panel p { margin: 0; }
 .payment-submit { margin-top: 4px; }
 .payment-security { text-align: center; margin-top: 12px; }
+
+
+/* Catálogo destacado en la página de inicio */
+.featured-section { padding-top: 26px; }
+.section-heading-row { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.section-heading-row h2 { margin: 0 0 8px; }
+.section-heading-row p { margin-bottom: 0; }
+.featured-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.featured-grid .product-card { min-width: 0; }
+.featured-grid .product-card .card-body > p { display: none; }
+.featured-cta { display: flex; justify-content: center; margin-top: 28px; }
+.featured-section .empty-results { grid-column: 1 / -1; }
+@media (max-width: 900px) {
+  .featured-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .section-heading-row { align-items: flex-start; flex-direction: column; }
+  .section-heading-row > .btn { width: 100%; text-align: center; }
+  .featured-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .featured-grid .card-body { padding: 12px; }
+  .featured-grid .card-body h2 { font-size: 1rem; }
+}
