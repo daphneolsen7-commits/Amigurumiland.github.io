@@ -97,6 +97,20 @@ function loadCart() { try { const a = JSON.parse(localStorage.getItem(CART_KEY) 
 function saveCart() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); updateCartCount() }
 function totalCart() { return cart.reduce((sum, x) => { const p = products.find(p => p.id === x.id); return sum + (p.price + (Number(x.extra) || 0)) * x.qty }, 0) }
 function customization(x) { return x.color === "Original" ? x.size : `${x.color} · ${x.size}` }
+function renderFeaturedProducts() {
+  const box = document.getElementById("featuredProducts");
+  if (!box) return;
+  const featuredIds = [1, 5, 3, 10, 11, 12];
+  const featured = featuredIds
+    .map(id => products.find(product => Number(product.id) === id))
+    .filter(Boolean)
+    .slice(0, 4);
+  box.setAttribute("aria-busy", "false");
+  box.innerHTML = featured.length
+    ? featured.map(p => `<a class="card product-card" href="./productos.html" aria-label="Explorar catálogo para ver ${escapeHtml(p.name)}"><img class="card-img" src="${img(p)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.onerror=null;this.src='assets/amigurumis.png'"><div class="card-body"><div class="muted">${escapeHtml(p.cat)}</div><h2>${escapeHtml(p.name)}</h2><div class="price">${money(p.price)}</div><span class="btn light full card-action">Explorar catálogo</span></div></a>`).join("")
+    : '<p class="muted">Pronto encontrarás aquí nuestros productos destacados. Explora el catálogo completo.</p>';
+}
+
 function renderProducts() {
   const box = document.getElementById("products"); if (!box) return;
   const q = (document.getElementById("search")?.value || "").toLowerCase().trim(), c = document.getElementById("category")?.value || "";
@@ -1256,6 +1270,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initAccount();
   initMyOrders();
 
+  renderFeaturedProducts();
   const file = location.pathname.split("/").pop();
 
   if (["checkout-datos.html", "checkout-pago.html", "confirmacion.html", "pedidos.html", "cuenta.html", "cotizacion.html"].includes(file) && !requireLogin()) {
