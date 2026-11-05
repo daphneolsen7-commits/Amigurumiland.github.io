@@ -451,6 +451,22 @@ async function processPayment() {
       items: orderItems
     };
 
+    // El pedido ya quedó confirmado en la base de datos. El correo es complementario:
+    // si falla el envío, no se revierte ni se bloquea la compra.
+    try {
+      const { data: emailResult, error: emailError } = await supabaseClient.functions.invoke(
+        "enviar-confirmacion-pedido",
+        { body: { orderId: result.pedido_id } }
+      );
+      order.emailSent = !emailError && emailResult?.sent === true;
+      if (!order.emailSent) {
+        console.warn("El pedido se registró, pero no se pudo enviar el correo:", emailError?.message || emailResult?.error);
+      }
+    } catch (emailError) {
+      order.emailSent = false;
+      console.warn("El pedido se registró, pero el envío de correo falló:", emailError);
+    }
+
     sessionStorage.setItem("LAST_ORDER", JSON.stringify(order));
     cart = [];
     saveCart();
