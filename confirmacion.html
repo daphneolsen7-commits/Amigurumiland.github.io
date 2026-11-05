@@ -38,6 +38,9 @@
             <h1>¡Pedido confirmado!</h1>
             <p id="confirmationText"></p>
             <div class="confirmation-card" id="confirmationCard"></div>
+            <p id="receiptStatus" class="muted" role="status" aria-live="polite"></p>
+            <div class="confirmation-actions"><button class="btn light" type="button" onclick="downloadOrderReceiptPdf()">Descargar resumen en PDF</button></div>
+            <p class="muted">Este resumen es informativo y no constituye una factura electrónica tributaria autorizada.</p>
             <div class="confirmation-actions"><a class="btn dark" href="pedidos.html">Ver mis pedidos</a><a
                     class="btn light" href="productos.html">Volver a productos</a></div>
         </section>

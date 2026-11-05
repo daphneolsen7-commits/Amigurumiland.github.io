@@ -97,6 +97,20 @@ function loadCart() { try { const a = JSON.parse(localStorage.getItem(CART_KEY) 
 function saveCart() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); updateCartCount() }
 function totalCart() { return cart.reduce((sum, x) => { const p = products.find(p => p.id === x.id); return sum + (p.price + (Number(x.extra) || 0)) * x.qty }, 0) }
 function customization(x) { return x.color === "Original" ? x.size : `${x.color} · ${x.size}` }
+function renderFeaturedProducts() {
+  const box = document.getElementById("featuredProducts");
+  if (!box) return;
+  const featuredIds = [1, 5, 3, 10, 11, 12];
+  const featured = featuredIds
+    .map(id => products.find(product => Number(product.id) === id))
+    .filter(Boolean)
+    .slice(0, 4);
+  box.setAttribute("aria-busy", "false");
+  box.innerHTML = featured.length
+    ? featured.map(p => `<a class="card product-card" href="./productos.html" aria-label="Explorar catálogo para ver ${escapeHtml(p.name)}"><img class="card-img" src="${img(p)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.onerror=null;this.src='assets/amigurumis.png'"><div class="card-body"><div class="muted">${escapeHtml(p.cat)}</div><h2>${escapeHtml(p.name)}</h2><div class="price">${money(p.price)}</div><span class="btn light full card-action">Explorar catálogo</span></div></a>`).join("")
+    : '<p class="muted">Pronto encontrarás aquí nuestros productos destacados. Explora el catálogo completo.</p>';
+}
+
 function renderProducts() {
   const box = document.getElementById("products"); if (!box) return;
   const q = (document.getElementById("search")?.value || "").toLowerCase().trim(), c = document.getElementById("category")?.value || "";
@@ -440,6 +454,7 @@ async function processPayment() {
     const order = {
       id: result.codigo,
       databaseId: result.pedido_id,
+      createdAt: new Date().toISOString(),
       paymentStatus: "pending_verification",
       paymentMethod: selectedPayment,
       paymentReference: payment.reference,
@@ -477,8 +492,54 @@ function initPayment() {
   updatePaymentFields();
 }
 function initData() { if (!cart.length) return location.href = "carrito.html"; checkoutSummary("checkoutSummary") }
-function initConfirmation() { const o = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null"); if (!o) return; document.getElementById("confirmationText").textContent = `Tu pedido ${o.id} fue registrado correctamente. `; document.getElementById("confirmationCard").innerHTML = `<p><b>Código del pedido</b><br>${escapeHtml(o.id)}</p><p><b>Método</b><br>${escapeHtml(o.paymentMethod)}</p><p><b>Estado del pago</b><br>${o.paymentStatus === "approved" ? "Aprobado" : "Pendiente de verificación"}</p><p><b>Total simulado</b><br>${money(o.total)}</p>` }
-function initConfirmation() { let order; try { order = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null") } catch { order = null } const text = document.getElementById("confirmationText"), card = document.getElementById("confirmationCard"); if (!order) { text.textContent = "No encontramos los datos de esta compra. Consulta tus pedidos para revisar su estado."; card.hidden = true; return } const items = (order.items || []).map(item => `<div class="summary-line"><span>${escapeHtml(item.name)}<small>${escapeHtml(item.customization)} × ${item.quantity}</small></span><b>${money(item.total)}</b></div>`).join(""), invoice = order.invoice || {}; text.textContent = order.paymentStatus === "approved" ? `Gracias, ${order.customerName}. Tu pedido fue confirmado y el pago quedó registrado.` : `Gracias, ${order.customerName}. Recibimos tu pedido; el pago está pendiente de verificación.`; card.innerHTML = `<section class="order-confirmation-block"><h2>Número de pedido</h2><div class="order-code-row"><strong id="orderCodeValue">${escapeHtml(order.id)}</strong><button class="btn light copy-order-button" type="button" onclick="copyOrderCode()" aria-label="Copiar número de pedido">Copiar</button></div><p class="notice">Tu pedido está asociado a tu cuenta. Puedes verlo junto con tus otras compras en Mis pedidos; el código queda como opción adicional de consulta.</p><p><a class="btn dark" href="pedidos.html">Ver mis pedidos</a></p></section><section class="order-confirmation-block"><h2>Resumen de compra</h2>${items}<div class="summary-total"><span>Total</span><b>${money(order.total)}</b></div></section><section class="order-confirmation-block"><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}</p><p><b>Estado:</b> ${order.paymentStatus === "approved" ? "Confirmado" : "Pendiente de verificación"}</p><p><b>Retiro:</b> ${escapeHtml(order.pickup)}</p></section><section class="order-confirmation-block"><h2>Datos de facturación</h2><p>${escapeHtml(invoice.name || order.customerName)} · ${invoice.idType === "ruc" ? "RUC" : "Cédula"} ${escapeHtml(invoice.idNumber || "")}</p><p>${escapeHtml(invoice.address || "")}</p><p>${escapeHtml(invoice.phone || "")} · ${escapeHtml(order.email)}</p></section>` }
+function getLastOrder() {
+  try { return JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null"); }
+  catch { return null; }
+}
+function initConfirmation() {
+  const order = getLastOrder();
+  const text = document.getElementById("confirmationText");
+  const card = document.getElementById("confirmationCard");
+  const status = document.getElementById("receiptStatus");
+  if (!order) {
+    text.textContent = "No encontramos los datos de esta compra. Consulta tus pedidos para revisar su estado.";
+    card.hidden = true;
+    if (status) status.textContent = "Puedes consultar el historial de compras desde Mis pedidos.";
+    return;
+  }
+  const items = (order.items || []).map(item =>
+    `<div class="summary-line"><span>${escapeHtml(item.name)}<small>${escapeHtml(item.customization)} × ${Number(item.quantity) || 0}</small></span><b>${money(item.total)}</b></div>`
+  ).join("");
+  const invoice = order.invoice || {};
+  const paymentLabel = order.paymentStatus === "approved" ? "Confirmado" : "Pendiente de verificación";
+  text.textContent = order.paymentStatus === "approved"
+    ? `Gracias, ${order.customerName}. Tu pedido fue registrado y el pago quedó confirmado.`
+    : `Gracias, ${order.customerName}. Recibimos tu pedido; el pago está pendiente de verificación.`;
+  card.innerHTML = `<section class="order-confirmation-block"><h2>Número de pedido</h2><div class="order-code-row"><strong id="orderCodeValue">${escapeHtml(order.id)}</strong><button class="btn light copy-order-button" type="button" onclick="copyOrderCode()" aria-label="Copiar número de pedido">Copiar</button></div><p class="notice">Tu pedido está asociado a tu cuenta. Puedes verlo junto con tus otras compras en Mis pedidos.</p><p><a class="btn dark" href="pedidos.html">Ver mis pedidos</a></p></section><section class="order-confirmation-block"><h2>Resumen de compra</h2>${items}<div class="summary-total"><span>Total</span><b>${money(order.total)}</b></div></section><section class="order-confirmation-block"><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}</p><p><b>Estado:</b> ${paymentLabel}</p><p><b>Retiro:</b> ${escapeHtml(order.pickup)}</p></section><section class="order-confirmation-block"><h2>Datos proporcionados</h2><p>${escapeHtml(invoice.name || order.customerName)} · ${invoice.idType === "ruc" ? "RUC" : "Cédula"} ${escapeHtml(invoice.idNumber || "")}</p><p>${escapeHtml(invoice.address || "")}</p><p>${escapeHtml(invoice.phone || "")} · ${escapeHtml(order.email)}</p></section>`;
+}
+function buildOrderReceiptHtml(order) {
+  const invoice = order.invoice || {};
+  const items = order.items || [];
+  const subtotal = items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+  const rows = items.map(item => `<tr><td>${escapeHtml(item.name)}<br><small>${escapeHtml(item.customization)}</small></td><td>${Number(item.quantity) || 0}</td><td>${money(item.unitPrice)}</td><td>${money(item.total)}</td></tr>`).join("");
+  const paymentStatus = order.paymentStatus === "approved" ? "Confirmado" : "Pendiente de verificación";
+  const date = new Date(order.createdAt || Date.now()).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" });
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Resumen de compra ${escapeHtml(order.id)}</title><style>
+    body{font:14px Arial,sans-serif;color:#302b29;margin:36px;line-height:1.5}h1{color:#a0442c;margin-bottom:4px}h2{font-size:16px;margin-top:26px;border-bottom:1px solid #e8e0d7;padding-bottom:6px}.muted{color:#756d67}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{text-align:left;padding:9px 6px;border-bottom:1px solid #e8e0d7}th{background:#fbf8f2}.total{text-align:right;font-size:18px;font-weight:bold;margin-top:18px}.notice{margin-top:28px;padding:12px;background:#fbf8f2;border:1px solid #e8e0d7;font-size:12px}@media print{body{margin:18mm}}
+  </style></head><body><h1>Amigurumiland</h1><p class="muted">Resumen informativo de compra</p><h2>Datos del pedido</h2><p><b>Código:</b> ${escapeHtml(order.id)}<br><b>Fecha:</b> ${escapeHtml(date)}<br><b>Cliente:</b> ${escapeHtml(order.customerName)}<br><b>Correo:</b> ${escapeHtml(order.email)}</p><h2>Productos</h2><table><thead><tr><th>Producto / personalización</th><th>Cant.</th><th>Precio unitario</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table><p><b>Subtotal:</b> ${money(subtotal)}</p><p class="total">Total: ${money(order.total)}</p><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}<br><b>Estado del pago:</b> ${paymentStatus}<br><b>Punto de retiro:</b> ${escapeHtml(order.pickup)}</p><h2>Datos de facturación proporcionados</h2><p>${escapeHtml(invoice.name || order.customerName)}<br>${invoice.idType === "ruc" ? "RUC" : "Cédula"}: ${escapeHtml(invoice.idNumber || "")}<br>${escapeHtml(invoice.address || "")}<br>${escapeHtml(invoice.phone || "")}</p><p class="notice">Este documento es únicamente un resumen informativo de la compra. No es una factura electrónica tributaria ni reemplaza un comprobante autorizado por el SRI.</p><script>window.onload=()=>window.print()</script></body></html>`;
+}
+function downloadOrderReceiptPdf() {
+  const order = getLastOrder();
+  const status = document.getElementById("receiptStatus");
+  if (!order) { if (status) status.textContent = "No se encontraron los datos del pedido."; return; }
+  const popup = window.open("", "_blank");
+  if (!popup) { if (status) status.textContent = "El navegador bloqueó la ventana. Permite ventanas emergentes e inténtalo nuevamente."; return; }
+  popup.document.open();
+  popup.document.write(buildOrderReceiptHtml(order));
+  popup.document.close();
+  if (status) status.textContent = "En la ventana de impresión, selecciona “Guardar como PDF” para guardar el resumen.";
+}
+
 async function copyOrderCode() { const code = document.getElementById("orderCodeValue")?.textContent; if (!code) return; try { await navigator.clipboard.writeText(code) } catch { const field = document.createElement("textarea"); field.value = code; field.style.position = "fixed"; field.style.opacity = "0"; document.body.append(field); field.select(); document.execCommand("copy"); field.remove() } showStatus("Número de pedido copiado.") }
 async function lookupOrder() {
   const codeField = document.getElementById("orderCode");
@@ -598,16 +659,6 @@ async function submitReview(id) {
 }
 
 function contactUrl(name) { return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola, quiero consultar sobre ${name} en Amigurumiland.`)}` }
-function initConfirmation() {
-  let order;
-  try { order = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null") } catch { order = null }
-  const text = document.getElementById("confirmationText"), card = document.getElementById("confirmationCard");
-  if (!order) { text.textContent = "No encontramos los datos de esta compra. Consulta tus pedidos para revisar su estado."; card.hidden = true; return }
-  const items = (order.items || []).map(item => `<div class="summary-line"><span>${escapeHtml(item.name)}<small>${escapeHtml(item.customization)} × ${item.quantity}</small></span><b>${money(item.total)}</b></div>`).join(""), invoice = order.invoice || {};
-  text.textContent = order.paymentStatus === "approved" ? `Gracias, ${order.customerName}. Tu pedido fue confirmado y el pago quedó registrado.` : `Gracias, ${order.customerName}. Recibimos tu pedido; el pago está pendiente de verificación.`;
-  card.hidden = false;
-  card.innerHTML = `<section class="order-confirmation-block"><h2>Número de pedido</h2><div class="order-code-row"><strong id="orderCodeValue">${escapeHtml(order.id)}</strong><button class="btn light copy-order-button" type="button" onclick="copyOrderCode()" aria-label="Copiar número de pedido">Copiar</button></div><p class="notice">Copia este número para consultar el estado y dar seguimiento a tu pedido.</p></section><section class="order-confirmation-block"><h2>Resumen de compra</h2>${items}<div class="summary-total"><span>Total</span><b>${money(order.total)}</b></div></section><section class="order-confirmation-block"><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}</p><p><b>Estado:</b> ${order.paymentStatus === "approved" ? "Confirmado" : "Pendiente de verificación"}</p><p><b>Retiro:</b> ${escapeHtml(order.pickup)}</p></section><section class="order-confirmation-block"><h2>Datos de facturación</h2><p>${escapeHtml(invoice.name || order.customerName)} · ${invoice.idType === "ruc" ? "RUC" : "Cédula"} ${escapeHtml(invoice.idNumber || "")}</p><p>${escapeHtml(invoice.address || "")}</p><p>${escapeHtml(invoice.phone || "")} · ${escapeHtml(order.email)}</p></section>`;
-}
 async function copyOrderCode() {
   const code = document.getElementById("orderCodeValue")?.textContent;
   if (!code) return;
@@ -1255,6 +1306,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   initPasswordReset();
   initAccount();
   initMyOrders();
+
+  renderFeaturedProducts();
 
   const file = location.pathname.split("/").pop();
 
