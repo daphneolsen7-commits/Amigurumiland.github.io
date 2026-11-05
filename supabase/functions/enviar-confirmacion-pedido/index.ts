@@ -1,5 +1,4 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,93 +20,6 @@ const escapeHtml = (value: unknown) =>
   String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   })[char]!);
-
-function wrapText(text: string, maxLength: number) {
-  const words = text.split(/\s+/);
-  const lines: string[] = [];
-  let line = "";
-  for (const word of words) {
-    const candidate = line ? line + " " + word : word;
-    if (candidate.length > maxLength && line) {
-      lines.push(line);
-      line = word;
-    } else line = candidate;
-  }
-  if (line) lines.push(line);
-  return lines;
-}
-
-async function createReceiptPdf(order: any, details: any[], payment: any, pickup: any) {
-  const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const pageWidth = 595.28;
-  const pageHeight = 841.89;
-  let page = pdf.addPage([pageWidth, pageHeight]);
-  let y = pageHeight - 58;
-  const ink = rgb(0.19, 0.16, 0.15);
-  const accent = rgb(0.63, 0.27, 0.17);
-
-  const draw = (text: string, x = 48, size = 10, useBold = false) => {
-    page.drawText(text, { x, y, size, font: useBold ? bold : font, color: ink });
-    y -= size + 7;
-  };
-  const ensureSpace = (needed = 28) => {
-    if (y < 55 + needed) {
-      page = pdf.addPage([pageWidth, pageHeight]);
-      y = pageHeight - 58;
-    }
-  };
-
-  page.drawText("AMIGURUMILAND", {
-    x: 48, y, size: 19, font: bold, color: accent,
-  });
-  y -= 30;
-  draw("CONFIRMACION Y RESUMEN DE COMPRA", 48, 12, true);
-  draw("Este documento es un comprobante informativo del pedido; no es una factura tributaria autorizada.");
-  y -= 8;
-  page.drawLine({ start: { x: 48, y }, end: { x: 547, y }, thickness: 1, color: accent });
-  y -= 24;
-
-  draw("Pedido: " + String(order.codigo), 48, 12, true);
-  draw("Fecha: " + new Date(order.created_at).toLocaleString("es-EC", {
-    dateStyle: "medium", timeStyle: "short", timeZone: "America/Guayaquil",
-  }));
-  draw("Cliente: " + String(order.customer_name || "Cliente"));
-  draw("Correo: " + String(order.email));
-  draw("Punto de retiro: " + String(pickup?.nombre || "Por coordinar"));
-  draw("Estado del pedido: " + String(order.estado));
-  draw("Metodo de pago: " + String(payment?.metodo || "No registrado"));
-  draw("Estado del pago: " + String(payment?.estado || "Pendiente"));
-  y -= 12;
-
-  draw("DETALLE DE PRODUCTOS", 48, 12, true);
-  for (const item of details) {
-    ensureSpace(48);
-    const customization = [item.color, item.tamano].filter(Boolean).join(" / ");
-    const label = String(item.nombre_producto) + (customization ? " (" + customization + ")" : "");
-    for (const line of wrapText(label, 72)) {
-      ensureSpace(20);
-      draw(line, 52, 10, true);
-    }
-    draw("Cantidad: " + item.cantidad + "   Precio unitario: " + money(Number(item.precio_unitario)) +
-      "   Subtotal: " + money(Number(item.subtotal)), 62, 9);
-  }
-
-  ensureSpace(75);
-  y -= 10;
-  page.drawLine({ start: { x: 330, y }, end: { x: 547, y }, thickness: 0.7, color: accent });
-  y -= 24;
-  page.drawText("TOTAL: " + money(Number(order.total)), {
-    x: 330, y, size: 14, font: bold, color: accent,
-  });
-  y -= 34;
-  ensureSpace(38);
-  draw("Gracias por elegir Amigurumiland. Elaboramos cada pieza con dedicacion.", 48, 9);
-  draw("Conserva este resumen para consultar el estado de tu pedido.", 48, 9);
-
-  return await pdf.save();
-}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -182,20 +94,24 @@ Deno.serve(async (req: Request) => {
     }
     if (!detailsResult.data?.length) return json({ error: "El pedido no tiene productos asociados." }, 422);
 
-    const orderForPdf = {
-      ...order,
-      customer_name: invoiceResult.data?.nombre_razon_social || authData.user.email || "Cliente",
-      email: recipient,
-    };
-    const pdfBytes = await createReceiptPdf(
-      orderForPdf, detailsResult.data, paymentResult.data, pickupResult.data,
-    );
-    let binary = "";
-    for (let offset = 0; offset < pdfBytes.length; offset += 0x8000) {
-      binary += String.fromCharCode(...pdfBytes.subarray(offset, offset + 0x8000));
-    }
-    const pdfBase64 = btoa(binary);
-
+    const itemsHtml = detailsResult.data.map((item: any) => {
+      const options = [item.color, item.tamano].filter(Boolean).join(" · ");
+      return `<tr><td>${escapeHtml(item.nombre_producto)}<br><small>${escapeHtml(options || "Sin personalización")}</small></td><td>${Number(item.cantidad)}</td><td>${escapeHtml(money(Number(item.precio_unitario)))}</td><td>${escapeHtml(money(Number(item.subtotal)))}</td></tr>`;
+    }).join("");
+    const customerName = String(invoiceResult.data?.nombre_razon_social || authData.user.user_metadata?.full_name || "Cliente");
+    const paymentMethod = String(paymentResult.data?.metodo || "No registrado");
+    const paymentStatus = String(paymentResult.data?.estado || "Pendiente");
+    const pickupName = String(pickupResult.data?.nombre || "Por coordinar");
+    const createdAt = new Date(order.created_at).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Guayaquil" });
+    const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"></head><body style="margin:0;padding:24px;background:#fbf8f2;font-family:Arial,sans-serif;color:#302b29;line-height:1.6">
+      <main style="max-width:680px;margin:auto;background:#fffdf9;padding:28px;border:1px solid #e8e0d7;border-radius:12px">
+      <h1 style="color:#a0442c">Amigurumiland ♡</h1><p>Hola ${escapeHtml(customerName)},</p><h2>¡Recibimos tu pedido!</h2>
+      <p>Tu pedido <strong>${escapeHtml(order.codigo)}</strong> fue registrado el ${escapeHtml(createdAt)}.</p>
+      <h3>Resumen de compra</h3><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#fbf8f2"><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${itemsHtml}</tbody></table>
+      <p style="text-align:right;font-size:20px"><strong>Total: ${escapeHtml(money(Number(order.total)))}</strong></p>
+      <h3>Pago y entrega</h3><p><strong>Método:</strong> ${escapeHtml(paymentMethod)}<br><strong>Estado del pago:</strong> ${escapeHtml(paymentStatus)}<br><strong>Estado del pedido:</strong> ${escapeHtml(order.estado)}<br><strong>Punto de retiro:</strong> ${escapeHtml(pickupName)}</p>
+      <p style="padding:12px;background:#fbf8f2;border:1px solid #e8e0d7;font-size:13px">Este correo es un resumen informativo de compra. No es una factura electrónica tributaria autorizada ni reemplaza un comprobante autorizado por el SRI.</p>
+      <p>Gracias por elegirnos.<br><strong>Con cariño, Amigurumiland</strong></p></main></body></html>`;
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -205,21 +121,8 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         from: fromEmail,
         to: [recipient],
-        subject: "Confirmacion de tu pedido " + order.codigo + " | Amigurumiland",
-        html: `<div style="font-family:Arial,sans-serif;color:#302b29;line-height:1.6">
-          <h2 style="color:#a0442c">¡Gracias por tu compra!</h2>
-          <p>Hola ${escapeHtml(orderForPdf.customer_name)},</p>
-          <p>Registramos tu pedido <strong>${escapeHtml(order.codigo)}</strong>.</p>
-          <p>El estado actual del pedido es <strong>${escapeHtml(order.estado)}</strong> y el pago figura como <strong>${escapeHtml(paymentResult.data?.estado || "Pendiente")}</strong>. Si elegiste transferencia, recuerda que el pago queda pendiente de verificacion.</p>
-          <p>Adjuntamos el resumen de compra en PDF para tu consulta.</p>
-          <p><strong>Total: ${escapeHtml(money(Number(order.total)))}</strong></p>
-          <p>Este resumen es informativo y no constituye una factura tributaria autorizada.</p>
-          <p>Con cariño,<br>Amigurumiland</p>
-        </div>`,
-        attachments: [{
-          filename: "resumen-pedido-" + order.codigo + ".pdf",
-          content: pdfBase64,
-        }],
+        subject: "Confirmación y resumen de tu pedido " + order.codigo + " | Amigurumiland",
+        html,
       }),
     });
 
