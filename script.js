@@ -516,7 +516,35 @@ function initConfirmation() {
     ? `Gracias, ${order.customerName}. Tu pedido fue registrado y el pago quedó confirmado.`
     : `Gracias, ${order.customerName}. Recibimos tu pedido; el pago está pendiente de verificación.`;
   card.innerHTML = `<section class="order-confirmation-block"><h2>Número de pedido</h2><div class="order-code-row"><strong id="orderCodeValue">${escapeHtml(order.id)}</strong><button class="btn light copy-order-button" type="button" onclick="copyOrderCode()" aria-label="Copiar número de pedido">Copiar</button></div><p class="notice">Tu pedido está asociado a tu cuenta. Puedes verlo junto con tus otras compras en Mis pedidos.</p><p><a class="btn dark" href="pedidos.html">Ver mis pedidos</a></p></section><section class="order-confirmation-block"><h2>Resumen de compra</h2>${items}<div class="summary-total"><span>Total</span><b>${money(order.total)}</b></div></section><section class="order-confirmation-block"><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}</p><p><b>Estado:</b> ${paymentLabel}</p><p><b>Retiro:</b> ${escapeHtml(order.pickup)}</p></section><section class="order-confirmation-block"><h2>Datos proporcionados para el comprobante</h2><p>${escapeHtml(invoice.name || order.customerName)} · ${invoice.idType === "ruc" ? "RUC" : "Cédula"} ${escapeHtml(invoice.idNumber || "")}</p><p>${escapeHtml(invoice.address || "")}</p><p>${escapeHtml(invoice.phone || "")} · ${escapeHtml(order.email)}</p></section><p class="notice">Este documento es un resumen informativo de compra y no constituye una factura electrónica tributaria autorizada.</p>`;
-  if (status) status.textContent = "Puedes generar el PDF desde tu navegador y preparar un correo con el resumen. No se envía automáticamente.";
+  if (status) status.textContent = "Enviando la confirmación y el resumen de compra a tu correo…";
+  sendOrderConfirmationEmail(order, status);
+}
+async function sendOrderConfirmationEmail(order, status) {
+  if (!order.databaseId || !supabaseClient) {
+    if (status) status.textContent = "El pedido quedó registrado. No se pudo iniciar el envío del correo; puedes consultar el resumen en Mis pedidos.";
+    return;
+  }
+  const attemptKey = "order_email_attempt_" + order.databaseId;
+  if (sessionStorage.getItem(attemptKey) === "sent") {
+    if (status) status.textContent = "La confirmación de este pedido ya fue enviada.";
+    return;
+  }
+  if (sessionStorage.getItem(attemptKey) === "pending") {
+    if (status) status.textContent = "El envío de la confirmación está en proceso.";
+    return;
+  }
+  sessionStorage.setItem(attemptKey, "pending");
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("enviar-confirmacion-pedido", { body: { orderId: order.databaseId } });
+    if (error) throw error;
+    if (!data?.sent) throw new Error(data?.error || "El servicio no confirmó el envío.");
+    sessionStorage.setItem(attemptKey, "sent");
+    if (status) status.textContent = "¡Listo! Enviamos el resumen de compra a " + (data.email || order.email) + ". Revisa también correo no deseado.";
+  } catch (error) {
+    sessionStorage.removeItem(attemptKey);
+    console.error("No se pudo enviar la confirmación del pedido:", error);
+    if (status) status.textContent = "Tu pedido sí quedó registrado, pero no pudimos enviar el correo. Puedes consultar los datos en Mis pedidos.";
+  }
 }
 function buildOrderReceiptHtml(order) {
   const invoice = order.invoice || {};
