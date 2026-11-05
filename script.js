@@ -454,6 +454,7 @@ async function processPayment() {
     const order = {
       id: result.codigo,
       databaseId: result.pedido_id,
+      createdAt: new Date().toISOString(),
       paymentStatus: "pending_verification",
       paymentMethod: selectedPayment,
       paymentReference: payment.reference,
@@ -658,16 +659,6 @@ async function submitReview(id) {
 }
 
 function contactUrl(name) { return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola, quiero consultar sobre ${name} en Amigurumiland.`)}` }
-function initConfirmation() {
-  let order;
-  try { order = JSON.parse(sessionStorage.getItem("LAST_ORDER") || "null") } catch { order = null }
-  const text = document.getElementById("confirmationText"), card = document.getElementById("confirmationCard");
-  if (!order) { text.textContent = "No encontramos los datos de esta compra. Consulta tus pedidos para revisar su estado."; card.hidden = true; return }
-  const items = (order.items || []).map(item => `<div class="summary-line"><span>${escapeHtml(item.name)}<small>${escapeHtml(item.customization)} × ${item.quantity}</small></span><b>${money(item.total)}</b></div>`).join(""), invoice = order.invoice || {};
-  text.textContent = order.paymentStatus === "approved" ? `Gracias, ${order.customerName}. Tu pedido fue confirmado y el pago quedó registrado.` : `Gracias, ${order.customerName}. Recibimos tu pedido; el pago está pendiente de verificación.`;
-  card.hidden = false;
-  card.innerHTML = `<section class="order-confirmation-block"><h2>Número de pedido</h2><div class="order-code-row"><strong id="orderCodeValue">${escapeHtml(order.id)}</strong><button class="btn light copy-order-button" type="button" onclick="copyOrderCode()" aria-label="Copiar número de pedido">Copiar</button></div><p class="notice">Copia este número para consultar el estado y dar seguimiento a tu pedido.</p></section><section class="order-confirmation-block"><h2>Resumen de compra</h2>${items}<div class="summary-total"><span>Total</span><b>${money(order.total)}</b></div></section><section class="order-confirmation-block"><h2>Pago y entrega</h2><p><b>Método:</b> ${escapeHtml(order.paymentMethod)}</p><p><b>Estado:</b> ${order.paymentStatus === "approved" ? "Confirmado" : "Pendiente de verificación"}</p><p><b>Retiro:</b> ${escapeHtml(order.pickup)}</p></section><section class="order-confirmation-block"><h2>Datos de facturación</h2><p>${escapeHtml(invoice.name || order.customerName)} · ${invoice.idType === "ruc" ? "RUC" : "Cédula"} ${escapeHtml(invoice.idNumber || "")}</p><p>${escapeHtml(invoice.address || "")}</p><p>${escapeHtml(invoice.phone || "")} · ${escapeHtml(order.email)}</p></section>`;
-}
 async function copyOrderCode() {
   const code = document.getElementById("orderCodeValue")?.textContent;
   if (!code) return;
